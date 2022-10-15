@@ -49,7 +49,7 @@ void *handle_client(void *arg){
 	int leave_flag = 0;					// flag to indicate if client is leaving
 
 	// receive name
-	if(recv(client->sockfd, client->name, NAME_LEN, 0) <= 0 || strlen(client->name) < 2 || strlen(client->name) >= NAME_LEN - 1){
+	if(recv(client->sockfd, buff_out, NAME_LEN, 0) <= 0 || strlen(buff_out) < 2 || strlen(buff_out) >= NAME_LEN - 1){
 		printf("Didn't enter the name.\n");
 		leave_flag = 1;
 	} else {
@@ -59,14 +59,6 @@ void *handle_client(void *arg){
 	}
 
 	bzero(buff_out, BUFFER_SZ);
-
-
-	
-
-
-
-
-
 }
 
 int main(int argc, char *argv[]) {
@@ -103,9 +95,9 @@ int main(int argc, char *argv[]) {
 		printf("Error: listen failed");
 		return EXIT_FAILURE;
 	}
-	
-	printf("server listen on %s:%d\n", ip, port);
 
+	printf("server listen on %s:%d\n", ip, port);
+	
 	while (1){
 		int client_size = sizeof(client_addr);
 
