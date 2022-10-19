@@ -10,4 +10,5 @@ typedef struct Node{
 
 void append(int data, node **head);
 void print_list(node *head);
+int min(node *head);
 #endif
