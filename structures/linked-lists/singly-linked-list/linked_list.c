@@ -63,6 +63,15 @@ int max(node *head) {
     return max_value;
 }
 
+void free_list(node *head) {
+    node *curr = head;
+    while (curr != NULL) {
+        node *next = curr->next;
+        free(curr);
+        curr = next;
+    }
+}
+
 int main(void) {
     node *head = NULL;
     append(1, &head);
@@ -74,5 +83,6 @@ int main(void) {
     print_list(head);
     printf("Min: %d\n", min(head));
     printf("Max: %d\n", max(head));
+    free_list(head);
     return 0;
 }
