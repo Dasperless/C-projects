@@ -6,7 +6,6 @@ Tests T1-F04-01 to T1-F04-05
 from tests.e2e.framework.case import TestCase
 from tests.e2e.framework.registry import register_test
 from tests.e2e.framework.probers import read_repo_file, file_exists
-from tests.e2e.framework.contracts import DATA_STRUCTURES_CONTRACT
 
 
 @register_test
@@ -16,15 +15,21 @@ class TestT1F0401(TestCase):
             test_id="T1-F04-01",
             tier=1,
             feature_id=4,
-            title="SLL interface includes complete memory deallocation (list_free)",
-            description="Verify that Singly Linked List API specifies list_free() to eliminate 100% memory leaks.",
-            inputs="SLL API contract or node.h/linked_list.h",
-            expected="list_free operation defined to deallocate all nodes",
+            title="SLL interface includes complete memory deallocation (free_list / list_free)",
+            description="Verify that Singly Linked List defines and implements a memory deallocation function.",
+            inputs="structures/linked-lists/singly-linked-list/node.h and linked_list.c",
+            expected="free_list function declared and implemented to deallocate nodes",
         )
 
     def execute(self) -> None:
-        ops = DATA_STRUCTURES_CONTRACT["sll"]["operations"]
-        self.assert_in("list_free", ops)
+        header_path = "structures/linked-lists/singly-linked-list/node.h"
+        source_path = "structures/linked-lists/singly-linked-list/linked_list.c"
+        self.assert_true(file_exists(header_path), f"{header_path} must exist")
+        header_content = read_repo_file(header_path)
+        self.assert_true("free_list(" in header_content or "list_free(" in header_content)
+
+        source_content = read_repo_file(source_path)
+        self.assert_true("free(" in source_content, "linked_list.c must call free() to deallocate memory")
 
 
 @register_test
@@ -35,14 +40,15 @@ class TestT1F0402(TestCase):
             tier=1,
             feature_id=4,
             title="Node allocation guards against NULL returns from memory allocation",
-            description="Verify that node creation checks malloc return pointer and returns false or handles allocation failure.",
-            inputs="SLL memory safety contract",
-            expected="check_malloc safety rule present",
+            description="Verify that append/allocation checks malloc return pointer against NULL.",
+            inputs="structures/linked-lists/singly-linked-list/linked_list.c",
+            expected="NULL check present following malloc invocation",
         )
 
     def execute(self) -> None:
-        rules = DATA_STRUCTURES_CONTRACT["sll"]["memory_safety"]
-        self.assert_in("check_malloc", rules)
+        source_content = read_repo_file("structures/linked-lists/singly-linked-list/linked_list.c")
+        self.assert_in("malloc(", source_content)
+        self.assert_true("NULL" in source_content and ("== NULL" in source_content or "!= NULL" in source_content))
 
 
 @register_test
@@ -54,25 +60,13 @@ class TestT1F0403(TestCase):
             feature_id=4,
             title="Header file node.h declares max() prototype avoiding implicit declaration warnings",
             description="Verify that header node.h declares prototype for max() function.",
-            inputs="structures/linked-lists/node.h or contract",
-            expected="max() function prototype declared",
+            inputs="structures/linked-lists/singly-linked-list/node.h",
+            expected="max() function prototype declared in node.h",
         )
 
     def execute(self) -> None:
-        # Check either existing node.h or standardized node.h
-        content = ""
-        for p in [
-            "structures/linked-lists/linked list/node.h",
-            "structures/linked-lists/singly-linked-list/node.h",
-            "structures/linked-lists/singly-linked-list/include/node.h",
-        ]:
-            if file_exists(p):
-                content = read_repo_file(p)
-                break
-        if "max(" in content:
-            self.assert_true(True)
-        else:
-            self.assert_equal(DATA_STRUCTURES_CONTRACT["sll"]["header"], "node.h")
+        header_content = read_repo_file("structures/linked-lists/singly-linked-list/node.h")
+        self.assert_in("max(", header_content, "node.h must declare max() prototype")
 
 
 @register_test
@@ -83,14 +77,15 @@ class TestT1F0404(TestCase):
             tier=1,
             feature_id=4,
             title="Pointer formatting in display() uses standard %p with void pointer cast",
-            description="Verify that pointer print specifiers use valid standard %p format without compiler warnings.",
-            inputs="Memory safety contract",
-            expected="valid_p_format rule enforced",
+            description="Verify that pointer print specifiers use valid standard %p format with (void *) cast.",
+            inputs="structures/linked-lists/singly-linked-list/linked_list.c",
+            expected="%p format specifier with (void *) cast present in print_list",
         )
 
     def execute(self) -> None:
-        rules = DATA_STRUCTURES_CONTRACT["sll"]["memory_safety"]
-        self.assert_in("valid_p_format", rules)
+        source_content = read_repo_file("structures/linked-lists/singly-linked-list/linked_list.c")
+        self.assert_in("%p", source_content, "linked_list.c must format pointers using %p")
+        self.assert_in("(void *)", source_content, "Pointer argument for %p must be cast to (void *)")
 
 
 @register_test
@@ -101,11 +96,11 @@ class TestT1F0405(TestCase):
             tier=1,
             feature_id=4,
             title="Traversal and search operations guard against NULL list head dereference",
-            description="Verify that all SLL functions guard against NULL pointers before dereferencing head.",
-            inputs="Memory safety contract",
-            expected="null_deref_guards rule enforced",
+            description="Verify that min() and max() functions check for NULL head before accessing node data.",
+            inputs="structures/linked-lists/singly-linked-list/linked_list.c",
+            expected="head == NULL guard present in min() and max()",
         )
 
     def execute(self) -> None:
-        rules = DATA_STRUCTURES_CONTRACT["sll"]["memory_safety"]
-        self.assert_in("null_deref_guards", rules)
+        source_content = read_repo_file("structures/linked-lists/singly-linked-list/linked_list.c")
+        self.assert_in("if (head == NULL)", source_content, "head == NULL check must guard against NULL dereference")

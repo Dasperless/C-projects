@@ -6,7 +6,6 @@ Tests T1-F03-01 to T1-F03-05
 from tests.e2e.framework.case import TestCase
 from tests.e2e.framework.registry import register_test
 from tests.e2e.framework.probers import read_repo_file, file_exists
-from tests.e2e.framework.contracts import CI_CONTRACT
 
 
 @register_test
@@ -17,16 +16,15 @@ class TestT1F0301(TestCase):
             tier=1,
             feature_id=3,
             title="CI workflow configuration targets .github/workflows/ci.yml",
-            description="Verify that GitHub Actions CI workflow path is defined and conforms to CI specification.",
-            inputs="Workflow path inspection or CI contract",
-            expected=".github/workflows/ci.yml target path validated",
+            description="Verify that GitHub Actions CI workflow file exists at .github/workflows/ci.yml and is non-empty.",
+            inputs=".github/workflows/ci.yml file path",
+            expected=".github/workflows/ci.yml exists and has workflow steps",
         )
 
     def execute(self) -> None:
-        self.assert_equal(CI_CONTRACT["workflow_path"], ".github/workflows/ci.yml")
-        if file_exists(".github/workflows/ci.yml"):
-            content = read_repo_file(".github/workflows/ci.yml")
-            self.assert_true(len(content) > 0)
+        self.assert_true(file_exists(".github/workflows/ci.yml"), "CI workflow .github/workflows/ci.yml must exist")
+        content = read_repo_file(".github/workflows/ci.yml")
+        self.assert_true(len(content) > 100, "CI workflow file must contain configuration content")
 
 
 @register_test
@@ -38,17 +36,15 @@ class TestT1F0302(TestCase):
             feature_id=3,
             title="CI workflow configures multi-OS matrix (Ubuntu and macOS)",
             description="Verify that CI workflow specification tests across both Linux (ubuntu-latest) and macOS (macos-latest).",
-            inputs="CI matrix specification",
+            inputs=".github/workflows/ci.yml",
             expected="ubuntu-latest and macos-latest present in OS matrix",
         )
 
     def execute(self) -> None:
-        os_list = CI_CONTRACT["os_matrix"]
-        self.assert_in("ubuntu-latest", os_list)
-        self.assert_in("macos-latest", os_list)
-        if file_exists(".github/workflows/ci.yml"):
-            content = read_repo_file(".github/workflows/ci.yml")
-            self.assert_true("ubuntu" in content.lower())
+        self.assert_true(file_exists(".github/workflows/ci.yml"), "CI workflow must exist")
+        content = read_repo_file(".github/workflows/ci.yml")
+        self.assert_in("ubuntu-latest", content, "CI matrix must include ubuntu-latest")
+        self.assert_in("macos-latest", content, "CI matrix must include macos-latest")
 
 
 @register_test
@@ -60,17 +56,15 @@ class TestT1F0303(TestCase):
             feature_id=3,
             title="CI workflow configures multi-compiler matrix (GCC and Clang)",
             description="Verify that CI workflow specification tests across both GCC and Clang compilers.",
-            inputs="CI matrix compiler specification",
+            inputs=".github/workflows/ci.yml",
             expected="gcc and clang present in compiler matrix",
         )
 
     def execute(self) -> None:
-        compilers = CI_CONTRACT["compiler_matrix"]
-        self.assert_in("gcc", compilers)
-        self.assert_in("clang", compilers)
-        if file_exists(".github/workflows/ci.yml"):
-            content = read_repo_file(".github/workflows/ci.yml")
-            self.assert_true("gcc" in content.lower() or "clang" in content.lower())
+        self.assert_true(file_exists(".github/workflows/ci.yml"), "CI workflow must exist")
+        content = read_repo_file(".github/workflows/ci.yml")
+        self.assert_in("gcc", content.lower(), "CI matrix must include gcc")
+        self.assert_in("clang", content.lower(), "CI matrix must include clang")
 
 
 @register_test
@@ -82,14 +76,21 @@ class TestT1F0304(TestCase):
             feature_id=3,
             title="CI workflow incorporates sanitizer checks (AddressSanitizer and UndefinedBehaviorSanitizer)",
             description="Verify that CI workflow specification includes jobs or steps compiling with ASan and UBSan.",
-            inputs="CI sanitizer configuration",
-            expected="address and undefined sanitizers validated in CI contract",
+            inputs=".github/workflows/ci.yml",
+            expected="ASan and UBSan flags configured in workflow",
         )
 
     def execute(self) -> None:
-        sanitizers = CI_CONTRACT["sanitizers"]
-        self.assert_in("address", sanitizers)
-        self.assert_in("undefined", sanitizers)
+        self.assert_true(file_exists(".github/workflows/ci.yml"), "CI workflow must exist")
+        content = read_repo_file(".github/workflows/ci.yml")
+        self.assert_true(
+            "ENABLE_ASAN" in content or "asan" in content.lower(),
+            "CI workflow must configure AddressSanitizer",
+        )
+        self.assert_true(
+            "ENABLE_UBSAN" in content or "ubsan" in content.lower(),
+            "CI workflow must configure UndefinedBehaviorSanitizer",
+        )
 
 
 @register_test
@@ -101,11 +102,12 @@ class TestT1F0305(TestCase):
             feature_id=3,
             title="CI workflow executes static analysis (cppcheck) and CTest suite",
             description="Verify that CI workflow specification incorporates automated testing with ctest and static analysis with cppcheck.",
-            inputs="CI tools specification",
-            expected="ctest and cppcheck included in CI toolchain requirements",
+            inputs=".github/workflows/ci.yml",
+            expected="ctest and cppcheck executed in CI steps",
         )
 
     def execute(self) -> None:
-        tools = CI_CONTRACT["tools"]
-        self.assert_in("ctest", tools)
-        self.assert_in("cppcheck", tools)
+        self.assert_true(file_exists(".github/workflows/ci.yml"), "CI workflow must exist")
+        content = read_repo_file(".github/workflows/ci.yml")
+        self.assert_in("ctest", content.lower(), "CI workflow must execute ctest")
+        self.assert_in("cppcheck", content.lower(), "CI workflow must execute cppcheck")

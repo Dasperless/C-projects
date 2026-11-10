@@ -6,6 +6,7 @@ stress resilience, data structure pipelines, and release governance.
 """
 
 import os
+from typing import Optional, List, Any
 import socket
 import tempfile
 import time
@@ -290,6 +291,120 @@ class TestT4SCN05(TestCase):
             server.stop()
 
 
+class PipelineBSTNode:
+    def __init__(self, key: int):
+        self.key = key
+        self.left: Optional["PipelineBSTNode"] = None
+        self.right: Optional["PipelineBSTNode"] = None
+
+
+class PipelineBST:
+    def __init__(self):
+        self.root: Optional[PipelineBSTNode] = None
+
+    def insert(self, key: int) -> bool:
+        if self.root is None:
+            self.root = PipelineBSTNode(key)
+            return True
+        curr = self.root
+        while True:
+            if key == curr.key:
+                return False  # Duplicate
+            elif key < curr.key:
+                if curr.left is None:
+                    curr.left = PipelineBSTNode(key)
+                    return True
+                curr = curr.left
+            else:
+                if curr.right is None:
+                    curr.right = PipelineBSTNode(key)
+                    return True
+                curr = curr.right
+
+    def inorder(self, output: list) -> None:
+        def _traverse(node: Optional[PipelineBSTNode]):
+            if node:
+                _traverse(node.left)
+                output.append(node.key)
+                _traverse(node.right)
+        _traverse(self.root)
+
+
+class PipelineHashTable:
+    def __init__(self, capacity: int = 16):
+        self.capacity = capacity
+        self.buckets: list = [[] for _ in range(capacity)]
+
+    def contains(self, key: int) -> bool:
+        idx = hash(key) % self.capacity
+        return any(k == key for k in self.buckets[idx])
+
+    def insert(self, key: int) -> bool:
+        idx = hash(key) % self.capacity
+        for k in self.buckets[idx]:
+            if k == key:
+                return False
+        self.buckets[idx].append(key)
+        return True
+
+
+class PipelineVector:
+    def __init__(self, capacity: int = 4):
+        self.capacity = capacity
+        self.size = 0
+        self.buffer = [None] * capacity
+
+    def push(self, val: int) -> None:
+        if self.size >= self.capacity:
+            self.capacity *= 2
+            new_buf = [None] * self.capacity
+            for i in range(self.size):
+                new_buf[i] = self.buffer[i]
+            self.buffer = new_buf
+        self.buffer[self.size] = val
+        self.size += 1
+
+    def get(self, idx: int) -> int:
+        return self.buffer[idx]
+
+
+class PipelineDLLNode:
+    def __init__(self, val: int):
+        self.val = val
+        self.prev: Optional["PipelineDLLNode"] = None
+        self.next: Optional["PipelineDLLNode"] = None
+
+
+class PipelineDLLQueue:
+    def __init__(self):
+        self.head: Optional[PipelineDLLNode] = None
+        self.tail: Optional[PipelineDLLNode] = None
+        self.count: int = 0
+
+    def enqueue(self, val: int) -> None:
+        node = PipelineDLLNode(val)
+        if self.tail is None:
+            self.head = node
+            self.tail = node
+        else:
+            self.tail.next = node
+            node.prev = self.tail
+            self.tail = node
+        self.count += 1
+
+    def dequeue(self) -> Optional[int]:
+        if self.head is None:
+            return None
+        val = self.head.val
+        self.head = self.head.next
+        if self.head is None:
+            self.tail = None
+        else:
+            self.head.prev = None
+        self.count -= 1
+        return val
+
+
 @register_test
 class TestT4SCN06(TestCase):
     def __init__(self):
@@ -298,33 +413,54 @@ class TestT4SCN06(TestCase):
             tier=4,
             feature_id=10,
             title="End-to-End Data Structure Pipeline",
-            description="Unsorted dataset processed through BST -> in-order flattening -> Vector -> Hash Table deduplication -> DLL queue.",
+            description="Unsorted dataset processed through genuine HashTable deduplication -> BST tree insertion -> in-order flattening -> Dynamic Vector buffering -> Doubly Linked List FIFO queue.",
             inputs="Raw unsorted integer stream with duplicates: [45, 12, 85, 12, 33, 90, 45, 1, 99]",
-            expected="Dataset sorted, deduplicated, and sequenced through all data structures",
+            expected="Dataset sorted, deduplicated, and sequenced through all data structures: [1, 12, 33, 45, 85, 90, 99]",
         )
 
     def execute(self) -> None:
         raw_data = [45, 12, 85, 12, 33, 90, 45, 1, 99]
 
-        # 1. Deduplication via Hash Table set
-        unique_keys = set(raw_data)
-        self.assert_equal(len(unique_keys), 7)
+        # 1. Deduplication via genuine HashTable ADT
+        ht = PipelineHashTable(capacity=8)
+        unique_list = []
+        for item in raw_data:
+            if not ht.contains(item):
+                ht.insert(item)
+                unique_list.append(item)
+        self.assert_equal(len(unique_list), 7)
 
-        # 2. BST sorted traversal
-        sorted_keys = sorted(unique_keys)
-        self.assert_equal(sorted_keys, [1, 12, 33, 45, 85, 90, 99])
+        # 2. Binary Search Tree ADT insertion
+        bst = PipelineBST()
+        for item in unique_list:
+            bst.insert(item)
 
-        # 3. Dynamic Vector buffering
-        vector_buffer = list(sorted_keys)
-        self.assert_equal(len(vector_buffer), 7)
+        # In-order traversal yields sorted sequence
+        inorder_keys = []
+        bst.inorder(inorder_keys)
+        self.assert_equal(inorder_keys, [1, 12, 33, 45, 85, 90, 99])
 
-        # 4. DLL Queue processing (FIFO)
-        dll_queue = list(vector_buffer)
+        # 3. Dynamic Vector ADT buffering with geometric growth
+        vec = PipelineVector(capacity=2)
+        for k in inorder_keys:
+            vec.push(k)
+        self.assert_equal(vec.size, 7)
+        self.assert_true(vec.capacity >= 7)
+
+        # 4. Doubly Linked List Queue ADT (FIFO)
+        queue = PipelineDLLQueue()
+        for i in range(vec.size):
+            queue.enqueue(vec.get(i))
+        self.assert_equal(queue.count, 7)
+
+        # 5. Dequeue elements and verify exact sequence
         popped_order = []
-        while dll_queue:
-            popped_order.append(dll_queue.pop(0))
+        while queue.count > 0:
+            val = queue.dequeue()
+            popped_order.append(val)
 
         self.assert_equal(popped_order, [1, 12, 33, 45, 85, 90, 99])
+        self.assert_equal(queue.count, 0)
 
 
 @register_test
