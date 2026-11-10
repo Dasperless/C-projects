@@ -3,12 +3,14 @@
 
 #include <stdio.h>
 
-typedef struct Node{
-	int data;
-	struct Node *next;
-}node;
+typedef struct Node {
+    int data;
+    struct Node *next;
+} node;
 
 void append(int data, node **head);
 void print_list(node *head);
 int min(node *head);
-#endif
+int max(node *head);
+
+#endif /* NODE_H */
