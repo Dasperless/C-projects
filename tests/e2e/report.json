@@ -1,0 +1,1891 @@
+{
+  "timestamp": 1794348215.523372,
+  "summary": {
+    "total": 196,
+    "passed": 196,
+    "failed": 0,
+    "skipped": 0,
+    "error": 0,
+    "pass_rate": 100.0,
+    "duration": 2.821,
+    "tier_counts": {
+      "tier_1": {
+        "total": 85,
+        "passed": 85,
+        "failed": 0,
+        "error": 0
+      },
+      "tier_2": {
+        "total": 85,
+        "passed": 85,
+        "failed": 0,
+        "error": 0
+      },
+      "tier_3": {
+        "total": 17,
+        "passed": 17,
+        "failed": 0,
+        "error": 0
+      },
+      "tier_4": {
+        "total": 9,
+        "passed": 9,
+        "failed": 0,
+        "error": 0
+      }
+    },
+    "feature_counts": {
+      "feature_1": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0
+      },
+      "feature_2": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_3": {
+        "total": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      "feature_4": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_5": {
+        "total": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      "feature_6": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_7": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_8": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_9": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_10": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0
+      },
+      "feature_11": {
+        "total": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "feature_12": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0
+      },
+      "feature_13": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      "feature_14": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0
+      },
+      "feature_15": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0
+      },
+      "feature_16": {
+        "total": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      "feature_17": {
+        "total": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "test_id": "T1-F01-01",
+      "tier": 1,
+      "feature_id": 1,
+      "title": "Root CMakeLists.txt defines project and minimum required version (3.20+)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F01-02",
+      "tier": 1,
+      "feature_id": 1,
+      "title": "Root CMakeLists.txt configures C standard C11 or higher",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F01-03",
+      "tier": 1,
+      "feature_id": 1,
+      "title": "Root CMakeLists.txt defines strict compiler warnings interface",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F01-04",
+      "tier": 1,
+      "feature_id": 1,
+      "title": "Root CMakeLists.txt defines sanitizer configuration options",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F01-05",
+      "tier": 1,
+      "feature_id": 1,
+      "title": "GNU Makefile exists at root and supports standard build targets",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F02-01",
+      "tier": 1,
+      "feature_id": 2,
+      "title": "ELF binary chatroom/client is purged or untracked from git index",
+      "status": "PASSED",
+      "duration": 0.0029,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F02-02",
+      "tier": 1,
+      "feature_id": 2,
+      "title": "ELF binary chatroom/server is purged or untracked from git index",
+      "status": "PASSED",
+      "duration": 0.0028,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F02-03",
+      "tier": 1,
+      "feature_id": 2,
+      "title": "ELF binary linked_list is purged or untracked from git index",
+      "status": "PASSED",
+      "duration": 0.0027,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F02-04",
+      "tier": 1,
+      "feature_id": 2,
+      "title": ".gitignore contains rules ignoring object files, archives, and build artifacts",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F02-05",
+      "tier": 1,
+      "feature_id": 2,
+      "title": "Directory naming follows standardized hyphenated naming (no unquoted whitespace)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F03-01",
+      "tier": 1,
+      "feature_id": 3,
+      "title": "CI workflow configuration targets .github/workflows/ci.yml",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F03-02",
+      "tier": 1,
+      "feature_id": 3,
+      "title": "CI workflow configures multi-OS matrix (Ubuntu and macOS)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F03-03",
+      "tier": 1,
+      "feature_id": 3,
+      "title": "CI workflow configures multi-compiler matrix (GCC and Clang)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F03-04",
+      "tier": 1,
+      "feature_id": 3,
+      "title": "CI workflow incorporates sanitizer checks (AddressSanitizer and UndefinedBehaviorSanitizer)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F03-05",
+      "tier": 1,
+      "feature_id": 3,
+      "title": "CI workflow executes static analysis (cppcheck) and CTest suite",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F04-01",
+      "tier": 1,
+      "feature_id": 4,
+      "title": "SLL interface includes complete memory deallocation (list_free)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F04-02",
+      "tier": 1,
+      "feature_id": 4,
+      "title": "Node allocation guards against NULL returns from memory allocation",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F04-03",
+      "tier": 1,
+      "feature_id": 4,
+      "title": "Header file node.h declares max() prototype avoiding implicit declaration warnings",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F04-04",
+      "tier": 1,
+      "feature_id": 4,
+      "title": "Pointer formatting in display() uses standard %p with void pointer cast",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F04-05",
+      "tier": 1,
+      "feature_id": 4,
+      "title": "Traversal and search operations guard against NULL list head dereference",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F05-01",
+      "tier": 1,
+      "feature_id": 5,
+      "title": "Singly linked list source decouples algorithmic logic from standalone main()",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F05-02",
+      "tier": 1,
+      "feature_id": 5,
+      "title": "Standalone interactive demo is separated into dedicated demo driver (demo.c)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F05-03",
+      "tier": 1,
+      "feature_id": 5,
+      "title": "Automated unit test suite is defined for singly linked list operations",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F05-04",
+      "tier": 1,
+      "feature_id": 5,
+      "title": "SLL build target provides library artifact or linkable object",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F05-05",
+      "tier": 1,
+      "feature_id": 5,
+      "title": "CTest suite integrates automated assertions validating list creation and destruction",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F06-01",
+      "tier": 1,
+      "feature_id": 6,
+      "title": "LinkedList container encapsulates head, tail, and size",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F06-02",
+      "tier": 1,
+      "feature_id": 6,
+      "title": "SLL supports O(1) prepend operation",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F06-03",
+      "tier": 1,
+      "feature_id": 6,
+      "title": "SLL supports index-based insertion (insert_at) with bounds checking",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F06-04",
+      "tier": 1,
+      "feature_id": 6,
+      "title": "SLL supports node deletion by value or index (list_remove)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F06-05",
+      "tier": 1,
+      "feature_id": 6,
+      "title": "SLL supports in-place list reversal and MergeSort algorithmic ordering",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F07-01",
+      "tier": 1,
+      "feature_id": 7,
+      "title": "Dynamic vector initializes with initial capacity and size 0",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F07-02",
+      "tier": 1,
+      "feature_id": 7,
+      "title": "Vector implements geometric growth strategy (2x factor) on capacity exhaustion",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F07-03",
+      "tier": 1,
+      "feature_id": 7,
+      "title": "Vector supports amortized O(1) push_back and pop_back operations",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F07-04",
+      "tier": 1,
+      "feature_id": 7,
+      "title": "Vector provides bounds-checked element access with error reporting",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F07-05",
+      "tier": 1,
+      "feature_id": 7,
+      "title": "Vector supports shrink_to_fit reclaiming unused allocated memory",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F08-01",
+      "tier": 1,
+      "feature_id": 8,
+      "title": "LIFO Stack ADT supports push, pop, and peek operations",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F08-02",
+      "tier": 1,
+      "feature_id": 8,
+      "title": "Stack handles empty-pop safely returning bool status",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F08-03",
+      "tier": 1,
+      "feature_id": 8,
+      "title": "FIFO Queue ADT implements circular ring buffer without memory shifting",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F08-04",
+      "tier": 1,
+      "feature_id": 8,
+      "title": "Queue circular buffer correctly wraps around head/tail indices",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F08-05",
+      "tier": 1,
+      "feature_id": 8,
+      "title": "Queue and Stack enforce complete resource deallocation upon destruction",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F09-01",
+      "tier": 1,
+      "feature_id": 9,
+      "title": "Doubly linked list node structure maintains both next and prev pointers",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F09-02",
+      "tier": 1,
+      "feature_id": 9,
+      "title": "DLL supports O(1) insertion at both front and back",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F09-03",
+      "tier": 1,
+      "feature_id": 9,
+      "title": "DLL supports bidirectional traversal (forward and backward)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F09-04",
+      "tier": 1,
+      "feature_id": 9,
+      "title": "DLL supports O(1) node deletion with pointer re-linking",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F09-05",
+      "tier": 1,
+      "feature_id": 9,
+      "title": "DLL container safely tracks list size and head/tail boundaries",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F10-01",
+      "tier": 1,
+      "feature_id": 10,
+      "title": "BST supports key insertion maintaining binary search tree invariant",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F10-02",
+      "tier": 1,
+      "feature_id": 10,
+      "title": "BST supports in-order, pre-order, and post-order depth-first traversals",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F10-03",
+      "tier": 1,
+      "feature_id": 10,
+      "title": "BST supports key lookup and deletion handling 0, 1, and 2 children cases",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F10-04",
+      "tier": 1,
+      "feature_id": 10,
+      "title": "Hash Table implements key-value insertion, retrieval, and removal",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F10-05",
+      "tier": 1,
+      "feature_id": 10,
+      "title": "Hash Table implements dynamic rehashing upon load factor threshold",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F11-01",
+      "tier": 1,
+      "feature_id": 11,
+      "title": "Server socket is configured with SO_REUSEADDR to prevent port binding lockout",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F11-02",
+      "tier": 1,
+      "feature_id": 11,
+      "title": "Client socket descriptor shadowing in client.c is resolved",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F11-03",
+      "tier": 1,
+      "feature_id": 11,
+      "title": "Server client handler thread does not terminate prematurely upon empty reads",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F11-04",
+      "tier": 1,
+      "feature_id": 11,
+      "title": "Server message relay loop avoids CPU busy-waiting spin loops",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F11-05",
+      "tier": 1,
+      "feature_id": 11,
+      "title": "Client connection slots support active recycling without lockout after 49 clients",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F12-01",
+      "tier": 1,
+      "feature_id": 12,
+      "title": "Packet framing standardizes fixed-length packet_header_t layout",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F12-02",
+      "tier": 1,
+      "feature_id": 12,
+      "title": "Chatroom protocol defines distinct packet types for connect, disconnect, and messages",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F12-03",
+      "tier": 1,
+      "feature_id": 12,
+      "title": "Private 1-on-1 messaging routes payload strictly to target recipient",
+      "status": "PASSED",
+      "duration": 0.0521,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F12-04",
+      "tier": 1,
+      "feature_id": 12,
+      "title": "Group channel messaging broadcasts strictly to subscribed group members",
+      "status": "PASSED",
+      "duration": 0.0514,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F12-05",
+      "tier": 1,
+      "feature_id": 12,
+      "title": "User listing command (/users) responds with active connected usernames",
+      "status": "PASSED",
+      "duration": 0.0509,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F13-01",
+      "tier": 1,
+      "feature_id": 13,
+      "title": "Logger interface defines logger_init, logger_log, and logger_close",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F13-02",
+      "tier": 1,
+      "feature_id": 13,
+      "title": "Logger uses POSIX mutex synchronization for concurrent multi-threaded safety",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F13-03",
+      "tier": 1,
+      "feature_id": 13,
+      "title": "Logger records connections and disconnections with ISO/standard timestamps",
+      "status": "PASSED",
+      "duration": 0.1027,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F13-04",
+      "tier": 1,
+      "feature_id": 13,
+      "title": "Logger records message relay metadata (sender, target/group, payload size)",
+      "status": "PASSED",
+      "duration": 0.1025,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F13-05",
+      "tier": 1,
+      "feature_id": 13,
+      "title": "Logger ensures persistent append-only disk flushing without file truncating",
+      "status": "PASSED",
+      "duration": 0.0017,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F14-01",
+      "tier": 1,
+      "feature_id": 14,
+      "title": "File transfer protocol implements offer handshake with filename, size, and CRC32",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F14-02",
+      "tier": 1,
+      "feature_id": 14,
+      "title": "File receiver can accept or decline incoming file transfer offer",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F14-03",
+      "tier": 1,
+      "feature_id": 14,
+      "title": "Binary payload is transmitted in discrete, sequenced chunks",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F14-04",
+      "tier": 1,
+      "feature_id": 14,
+      "title": "Receiver verifies complete reconstructed file against CRC32 checksum",
+      "status": "PASSED",
+      "duration": 0.0001,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F14-05",
+      "tier": 1,
+      "feature_id": 14,
+      "title": "File saving enforces sandboxing strictly within ./downloads/ preventing directory traversal",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F15-01",
+      "tier": 1,
+      "feature_id": 15,
+      "title": "Server administrative interface provides dedicated management command processing",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F15-02",
+      "tier": 1,
+      "feature_id": 15,
+      "title": "Admin users command queries current active client connections",
+      "status": "PASSED",
+      "duration": 0.0517,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F15-03",
+      "tier": 1,
+      "feature_id": 15,
+      "title": "Admin stats command reports uptime, packet counts, and traffic metrics",
+      "status": "PASSED",
+      "duration": 0.0508,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F15-04",
+      "tier": 1,
+      "feature_id": 15,
+      "title": "Admin kick command forcefully disconnects target client and frees slot",
+      "status": "PASSED",
+      "duration": 0.051,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F15-05",
+      "tier": 1,
+      "feature_id": 15,
+      "title": "Server handles SIGINT/SIGTERM gracefully closing sockets and cleaning resources",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F16-01",
+      "tier": 1,
+      "feature_id": 16,
+      "title": "Repository provides root .clang-format enforcing LLVM C style standards",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F16-02",
+      "tier": 1,
+      "feature_id": 16,
+      "title": "Repository provides .editorconfig defining indentation, charset, and trim rules",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F16-03",
+      "tier": 1,
+      "feature_id": 16,
+      "title": "Deprecated legacy networking function inet_addr is replaced by modern inet_pton",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F16-04",
+      "tier": 1,
+      "feature_id": 16,
+      "title": "Deprecated memory function bzero is replaced by standard memset",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F16-05",
+      "tier": 1,
+      "feature_id": 16,
+      "title": "Strict compiler flags enforce zero warnings across entire codebase",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F17-01",
+      "tier": 1,
+      "feature_id": 17,
+      "title": "Root README.md provides comprehensive architecture overview, prerequisites, and build guide",
+      "status": "PASSED",
+      "duration": 0.0002,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F17-02",
+      "tier": 1,
+      "feature_id": 17,
+      "title": "Chatroom module provides architecture guide and protocol documentation",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F17-03",
+      "tier": 1,
+      "feature_id": 17,
+      "title": "Data structures module provides Big-O complexity tables and usage examples",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F17-04",
+      "tier": 1,
+      "feature_id": 17,
+      "title": "Repository root contains official OSI-compliant LICENSE (MIT)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T1-F17-05",
+      "tier": 1,
+      "feature_id": 17,
+      "title": "Repository root contains CONTRIBUTING.md guidelines for PRs and coding style",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F01-01",
+      "tier": 2,
+      "feature_id": 1,
+      "title": "CMake build handles empty build directory clean configuration",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F01-02",
+      "tier": 2,
+      "feature_id": 1,
+      "title": "CMake handles invalid sanitizer configuration flag gracefully",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F01-03",
+      "tier": 2,
+      "feature_id": 1,
+      "title": "Makefile targets handle repeated consecutive invocations of clean",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F01-04",
+      "tier": 2,
+      "feature_id": 1,
+      "title": "CMake handles custom install prefix without path truncation",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F01-05",
+      "tier": 2,
+      "feature_id": 1,
+      "title": "Build system handles parallel compilation without race conditions",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F02-01",
+      "tier": 2,
+      "feature_id": 2,
+      "title": "Git ignore correctly excludes nested build directories at arbitrary depths",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F02-02",
+      "tier": 2,
+      "feature_id": 2,
+      "title": "Git ignore matches shared libraries and macOS ds_store artifacts",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F02-03",
+      "tier": 2,
+      "feature_id": 2,
+      "title": "Directory path validation rejects filenames with unescaped spaces or tabs",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F02-04",
+      "tier": 2,
+      "feature_id": 2,
+      "title": "Git tracking verification handles case sensitivity differences",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F02-05",
+      "tier": 2,
+      "feature_id": 2,
+      "title": "Git tree does not contain any compiled object files (.o) or static archives (.a)",
+      "status": "PASSED",
+      "duration": 0.0029,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F03-01",
+      "tier": 2,
+      "feature_id": 3,
+      "title": "CI matrix workflow specifies exact modern OS versions avoiding deprecated runners",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F03-02",
+      "tier": 2,
+      "feature_id": 3,
+      "title": "CI workflow configuration fails early on compiler error without silent fallback",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F03-03",
+      "tier": 2,
+      "feature_id": 3,
+      "title": "CI workflow specifies tools required for comprehensive test execution",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F03-04",
+      "tier": 2,
+      "feature_id": 3,
+      "title": "CI workflow configures separate sanitizer job for memory and undefined behavior",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F03-05",
+      "tier": 2,
+      "feature_id": 3,
+      "title": "CI workflow configures static analysis job for code quality",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F04-01",
+      "tier": 2,
+      "feature_id": 4,
+      "title": "list_free handles NULL pointer input without segfault (idempotent NULL)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F04-02",
+      "tier": 2,
+      "feature_id": 4,
+      "title": "SLL handles allocation failure simulation returning false/error cleanly",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F04-03",
+      "tier": 2,
+      "feature_id": 4,
+      "title": "SLL node deletion of non-existent value returns false without state corruption",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F04-04",
+      "tier": 2,
+      "feature_id": 4,
+      "title": "SLL max() on empty list returns sentinel or handles empty error gracefully",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F04-05",
+      "tier": 2,
+      "feature_id": 4,
+      "title": "Consecutive multiple list_free invocations do not cause double-free",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F05-01",
+      "tier": 2,
+      "feature_id": 5,
+      "title": "Singly linked list header guards prevent multiple inclusion compilation errors",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F05-02",
+      "tier": 2,
+      "feature_id": 5,
+      "title": "Modular library can be linked without duplicate main symbol collision",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F05-03",
+      "tier": 2,
+      "feature_id": 5,
+      "title": "Unit test assertions handle empty list state without crashing",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F05-04",
+      "tier": 2,
+      "feature_id": 5,
+      "title": "SLL demo driver handles EOF on stdin gracefully without infinite looping",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F05-05",
+      "tier": 2,
+      "feature_id": 5,
+      "title": "SLL test executable exits with code 0 on success and non-zero on failure",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F06-01",
+      "tier": 2,
+      "feature_id": 6,
+      "title": "SLL insert_at index 0 behaves identically to prepend updating head",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F06-02",
+      "tier": 2,
+      "feature_id": 6,
+      "title": "SLL insert_at out-of-bounds index returns false and leaves list unmodified",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F06-03",
+      "tier": 2,
+      "feature_id": 6,
+      "title": "SLL in-place reverse on 0-element and 1-element lists preserves identity",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F06-04",
+      "tier": 2,
+      "feature_id": 6,
+      "title": "SLL MergeSort on already-sorted and reverse-sorted lists produces sorted output",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F06-05",
+      "tier": 2,
+      "feature_id": 6,
+      "title": "SLL tail pointer remains strictly synchronized after pop and remove operations",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F07-01",
+      "tier": 2,
+      "feature_id": 7,
+      "title": "Vector push on zero-capacity vector triggers automatic geometric expansion",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F07-02",
+      "tier": 2,
+      "feature_id": 7,
+      "title": "Vector pop on empty vector returns false without underflow",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F07-03",
+      "tier": 2,
+      "feature_id": 7,
+      "title": "Vector index access at index >= size returns error and prevents out-of-bounds read",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F07-04",
+      "tier": 2,
+      "feature_id": 7,
+      "title": "Vector shrink_to_fit on empty vector handles 0 capacity safely",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F07-05",
+      "tier": 2,
+      "feature_id": 7,
+      "title": "Vector stress test: 10,000 rapid pushes maintains continuous integrity",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F08-01",
+      "tier": 2,
+      "feature_id": 8,
+      "title": "Stack pop on empty stack returns false and maintains stack integrity",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F08-02",
+      "tier": 2,
+      "feature_id": 8,
+      "title": "Stack push on full stack returns false without buffer overflow",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F08-03",
+      "tier": 2,
+      "feature_id": 8,
+      "title": "Circular queue full-wrap: enqueue/dequeue cycles wrap indices without shifting",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F08-04",
+      "tier": 2,
+      "feature_id": 8,
+      "title": "Circular queue distinguishes completely full state from completely empty state",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F08-05",
+      "tier": 2,
+      "feature_id": 8,
+      "title": "Circular queue peek on empty queue returns false without reading uninitialized memory",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F09-01",
+      "tier": 2,
+      "feature_id": 9,
+      "title": "DLL pop_front and pop_back on single-element list correctly resets head and tail to NULL",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F09-02",
+      "tier": 2,
+      "feature_id": 9,
+      "title": "DLL pop on empty list returns false and preserves NULL pointers",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F09-03",
+      "tier": 2,
+      "feature_id": 9,
+      "title": "DLL node deletion updates both predecessor next and successor prev pointers",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F09-04",
+      "tier": 2,
+      "feature_id": 9,
+      "title": "DLL backward traversal from tail reaches head matching forward reverse order",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F09-05",
+      "tier": 2,
+      "feature_id": 9,
+      "title": "DLL destroy on empty list is safe and leak-free",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F10-01",
+      "tier": 2,
+      "feature_id": 10,
+      "title": "BST insertion of duplicate key is rejected or handled deterministically",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F10-02",
+      "tier": 2,
+      "feature_id": 10,
+      "title": "BST deletion of node with two children correctly substitutes in-order successor",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F10-03",
+      "tier": 2,
+      "feature_id": 10,
+      "title": "BST deletion of root node updates root pointer correctly",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F10-04",
+      "tier": 2,
+      "feature_id": 10,
+      "title": "Hash table handles hash collisions using chaining or open addressing",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F10-05",
+      "tier": 2,
+      "feature_id": 10,
+      "title": "Hash table dynamic rehashing correctly doubles bucket count and preserves all entries",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F11-01",
+      "tier": 2,
+      "feature_id": 11,
+      "title": "Server socket handles rapid connect and abrupt disconnect without thread crash",
+      "status": "PASSED",
+      "duration": 0.002,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F11-02",
+      "tier": 2,
+      "feature_id": 11,
+      "title": "Server handles connection attempts up to capacity with graceful management",
+      "status": "PASSED",
+      "duration": 0.0513,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F11-03",
+      "tier": 2,
+      "feature_id": 11,
+      "title": "Server client disconnect cleans up client slot and allows new connections",
+      "status": "PASSED",
+      "duration": 0.1512,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F11-04",
+      "tier": 2,
+      "feature_id": 11,
+      "title": "Server socket handles zero-byte recv (client FIN) cleanly closing connection",
+      "status": "PASSED",
+      "duration": 0.1007,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F11-05",
+      "tier": 2,
+      "feature_id": 11,
+      "title": "Server handles duplicate username connection gracefully with error packet",
+      "status": "PASSED",
+      "duration": 0.0515,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F12-01",
+      "tier": 2,
+      "feature_id": 12,
+      "title": "Protocol framing handles fragmented TCP receive where header arrives in separate chunks",
+      "status": "PASSED",
+      "duration": 0.0706,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F12-02",
+      "tier": 2,
+      "feature_id": 12,
+      "title": "Protocol framing handles multiple packets coalesced in a single TCP read",
+      "status": "PASSED",
+      "duration": 0.0512,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F12-03",
+      "tier": 2,
+      "feature_id": 12,
+      "title": "Private message to non-existent user returns descriptive error packet",
+      "status": "PASSED",
+      "duration": 0.0511,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F12-04",
+      "tier": 2,
+      "feature_id": 12,
+      "title": "Group message to unsubscribed group correctly isolates non-members",
+      "status": "PASSED",
+      "duration": 0.302,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F12-05",
+      "tier": 2,
+      "feature_id": 12,
+      "title": "User listing query with maximum connected users formats without buffer overflow",
+      "status": "PASSED",
+      "duration": 0.0517,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F13-01",
+      "tier": 2,
+      "feature_id": 13,
+      "title": "Logger handles concurrent writes from 20 threads without message interleaving",
+      "status": "PASSED",
+      "duration": 0.0174,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F13-02",
+      "tier": 2,
+      "feature_id": 13,
+      "title": "Logger handles log messages with maximum length string without truncation",
+      "status": "PASSED",
+      "duration": 0.0009,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F13-03",
+      "tier": 2,
+      "feature_id": 13,
+      "title": "Logger handles missing directory by creating parent folders automatically",
+      "status": "PASSED",
+      "duration": 0.0007,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F13-04",
+      "tier": 2,
+      "feature_id": 13,
+      "title": "Logger stop is safe against duplicate invocations",
+      "status": "PASSED",
+      "duration": 0.0003,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F13-05",
+      "tier": 2,
+      "feature_id": 13,
+      "title": "Logger accurately formats timestamps in standard format",
+      "status": "PASSED",
+      "duration": 0.0006,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F14-01",
+      "tier": 2,
+      "feature_id": 14,
+      "title": "File transfer offer with 0-byte empty file is handled safely",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F14-02",
+      "tier": 2,
+      "feature_id": 14,
+      "title": "File transfer chunk corruption triggers checksum mismatch detection",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F14-03",
+      "tier": 2,
+      "feature_id": 14,
+      "title": "File transfer rejects path traversal attempts (e.g. ../../etc/passwd)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F14-04",
+      "tier": 2,
+      "feature_id": 14,
+      "title": "File transfer handles multi-chunk reassembly in exact sequence",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F14-05",
+      "tier": 2,
+      "feature_id": 14,
+      "title": "File transfer protocol supports large payload transfers via multiple 64KB chunks",
+      "status": "PASSED",
+      "duration": 0.0055,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F15-01",
+      "tier": 2,
+      "feature_id": 15,
+      "title": "Admin console handles malformed or unknown commands with helpful error message",
+      "status": "PASSED",
+      "duration": 0.0513,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F15-02",
+      "tier": 2,
+      "feature_id": 15,
+      "title": "Admin kick on non-existent username reports error without side-effects",
+      "status": "PASSED",
+      "duration": 0.0513,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F15-03",
+      "tier": 2,
+      "feature_id": 15,
+      "title": "Admin rapid succession commands do not deadlock server state lock",
+      "status": "PASSED",
+      "duration": 0.0526,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F15-04",
+      "tier": 2,
+      "feature_id": 15,
+      "title": "Server signal handler initiates graceful shutdown without dropping pending flush",
+      "status": "PASSED",
+      "duration": 0.1018,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F15-05",
+      "tier": 2,
+      "feature_id": 15,
+      "title": "Admin console handles empty input line without crash",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F16-01",
+      "tier": 2,
+      "feature_id": 16,
+      "title": ".clang-format specifies 4-space indentation and 100 column limit",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F16-02",
+      "tier": 2,
+      "feature_id": 16,
+      "title": "All C header files are required to maintain standard header guards",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F16-03",
+      "tier": 2,
+      "feature_id": 16,
+      "title": "Deprecated functions list explicitly contains legacy bzero and inet_addr",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F16-04",
+      "tier": 2,
+      "feature_id": 16,
+      "title": "Modern API replacements provide type-safe and standard library alternatives",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F16-05",
+      "tier": 2,
+      "feature_id": 16,
+      "title": "Compiler warning flags interface applies -Wconversion and -Wshadow",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F17-01",
+      "tier": 2,
+      "feature_id": 17,
+      "title": "Documentation specification enumerates all mandatory repository guide files",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F17-02",
+      "tier": 2,
+      "feature_id": 17,
+      "title": "README specification requires comprehensive architectural and building sections",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F17-03",
+      "tier": 2,
+      "feature_id": 17,
+      "title": "Repository license contract mandates standard MIT terms",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F17-04",
+      "tier": 2,
+      "feature_id": 17,
+      "title": "CONTRIBUTING documentation mandates feature branching model",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T2-F17-05",
+      "tier": 2,
+      "feature_id": 17,
+      "title": "Module architecture documentation covers both chatroom and structures subsystems",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-01",
+      "tier": 3,
+      "feature_id": 1,
+      "title": "CMake build system (F1) compiles Singly Linked List with strict warnings (F16)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-02",
+      "tier": 3,
+      "feature_id": 4,
+      "title": "Singly Linked List (F4) integrates into CTest automated suite (F5) with ASan (F1)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-03",
+      "tier": 3,
+      "feature_id": 7,
+      "title": "Dynamic Vector (F7) backed circular buffer queue (F8) with zero memory leaks",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-04",
+      "tier": 3,
+      "feature_id": 9,
+      "title": "Doubly Linked List (F9) used for LRU cache with Hash Table (F10) lookup",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-05",
+      "tier": 3,
+      "feature_id": 10,
+      "title": "BST (F10) in-order traversal dumped into Vector (F7) yielding sorted sequence",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-06",
+      "tier": 3,
+      "feature_id": 11,
+      "title": "Chatroom server (F11) uses protocol framing (F12) over non-blocking sockets",
+      "status": "PASSED",
+      "duration": 0.0513,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-07",
+      "tier": 3,
+      "feature_id": 12,
+      "title": "Chatroom private messaging (F12) generates audit log entries in thread-safe logger (F13)",
+      "status": "PASSED",
+      "duration": 0.1034,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-08",
+      "tier": 3,
+      "feature_id": 15,
+      "title": "Admin console kick (F15) triggers disconnect event logged by audit logger (F13)",
+      "status": "PASSED",
+      "duration": 0.1032,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-09",
+      "tier": 3,
+      "feature_id": 14,
+      "title": "Chunked binary file transfer (F14) operates concurrently with active group chat (F12)",
+      "status": "PASSED",
+      "duration": 0.101,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-10",
+      "tier": 3,
+      "feature_id": 15,
+      "title": "Server graceful shutdown (F15) flushes audit logger (F13) and releases all sockets (F11)",
+      "status": "PASSED",
+      "duration": 0.1024,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-11",
+      "tier": 3,
+      "feature_id": 1,
+      "title": "CMake build (F1) compiles chatroom with sanitizer flags (F3) and zero warnings (F16)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-12",
+      "tier": 3,
+      "feature_id": 2,
+      "title": "Git hygiene (F2) verifies no binary artifacts exist after full make clean (F1)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-13",
+      "tier": 3,
+      "feature_id": 10,
+      "title": "Hash Table (F10) tracks active chatroom user sessions for admin console (F15)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-14",
+      "tier": 3,
+      "feature_id": 14,
+      "title": "File transfer CRC32 validation (F14) verified against vector-buffered chunks (F7)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-15",
+      "tier": 3,
+      "feature_id": 8,
+      "title": "Stack LIFO (F8) tracks reverse history of private chat messages (F12)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-16",
+      "tier": 3,
+      "feature_id": 6,
+      "title": "SLL MergeSort (F6) sorts user list for protocol response (F12)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T3-INT-17",
+      "tier": 3,
+      "feature_id": 17,
+      "title": "Documentation code examples (F17) match API signatures validated by compilation (F1)",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-01",
+      "tier": 4,
+      "feature_id": 12,
+      "title": "Multi-User Collaborative Chat Session",
+      "status": "PASSED",
+      "duration": 0.1523,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-02",
+      "tier": 4,
+      "feature_id": 14,
+      "title": "Secure Peer-to-Peer Binary Document Exchange",
+      "status": "PASSED",
+      "duration": 0.054,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-03",
+      "tier": 4,
+      "feature_id": 15,
+      "title": "Server Administration & Rogue User Eviction",
+      "status": "PASSED",
+      "duration": 0.1017,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-04",
+      "tier": 4,
+      "feature_id": 11,
+      "title": "High-Concurrency Burst Stress Test",
+      "status": "PASSED",
+      "duration": 0.1616,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-05",
+      "tier": 4,
+      "feature_id": 12,
+      "title": "Network Jitter & Packet Fragmentation Resilience",
+      "status": "PASSED",
+      "duration": 0.0921,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-06",
+      "tier": 4,
+      "feature_id": 10,
+      "title": "End-to-End Data Structure Pipeline",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-07",
+      "tier": 4,
+      "feature_id": 13,
+      "title": "Graceful Disaster Recovery & Shutdown",
+      "status": "PASSED",
+      "duration": 0.1029,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-08",
+      "tier": 4,
+      "feature_id": 1,
+      "title": "Complete Build, Lint, and Sanitizer Verification",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    },
+    {
+      "test_id": "T4-SCN-09",
+      "tier": 4,
+      "feature_id": 17,
+      "title": "Repository Governance and Release Readiness Audit",
+      "status": "PASSED",
+      "duration": 0.0,
+      "message": "Assertion satisfied"
+    }
+  ]
+}
