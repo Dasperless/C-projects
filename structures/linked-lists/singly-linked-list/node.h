@@ -12,5 +12,6 @@ void append(int data, node **head);
 void print_list(node *head);
 int min(node *head);
 int max(node *head);
+void free_list(node *head);
 
 #endif /* NODE_H */
