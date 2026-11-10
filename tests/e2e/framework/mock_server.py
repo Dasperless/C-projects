@@ -53,11 +53,26 @@ class MockChatServer:
         self.running = False
         if self.server_sock:
             try:
+                dummy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                dummy.connect((self.host, self.port))
+                dummy.close()
+            except Exception:
+                pass
+            try:
                 self.server_sock.close()
+            except Exception:
+                pass
+        if self.thread:
+            try:
+                self.thread.join(timeout=0.5)
             except Exception:
                 pass
         with self.lock:
             for sock in list(self.clients.values()):
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
                 try:
                     sock.close()
                 except Exception:
@@ -65,7 +80,7 @@ class MockChatServer:
             self.clients.clear()
         for t in list(self.client_threads):
             try:
-                t.join(timeout=0.05)
+                t.join(timeout=0.5)
             except Exception:
                 pass
         self._log("SERVER_STOP", "Server shutdown gracefully")
@@ -87,11 +102,17 @@ class MockChatServer:
         while self.running:
             try:
                 client_sock, addr = self.server_sock.accept()
-                t = threading.Thread(target=self._handle_client, args=(client_sock, addr), daemon=True)
-                self.client_threads.append(t)
-                t.start()
             except Exception:
                 break
+            if not self.running:
+                try:
+                    client_sock.close()
+                except Exception:
+                    pass
+                break
+            t = threading.Thread(target=self._handle_client, args=(client_sock, addr), daemon=True)
+            self.client_threads.append(t)
+            t.start()
 
     def _handle_client(self, sock: socket.socket, addr: Tuple[str, int]) -> None:
         username = ""
@@ -184,7 +205,8 @@ class MockChatServer:
                         del self.clients[username]
                     for gname, members in list(self.groups.items()):
                         members.discard(username)
-                self._log("DISCONNECT", f"Connection cleaned up for {username}")
+                if self.running:
+                    self._log("DISCONNECT", f"Connection cleaned up for {username}")
             try:
                 sock.close()
             except Exception:
