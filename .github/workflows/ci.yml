@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-matrix:
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }}, ${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Compiler Environment (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            echo "CC=gcc" >> $GITHUB_ENV
+          else
+            echo "CC=clang" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Compiler Environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            echo "CC=gcc" >> $GITHUB_ENV
+          else
+            echo "CC=clang" >> $GITHUB_ENV
+          fi
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DENABLE_WERROR=ON
+
+      - name: Build Targets
+        run: cmake --build build --config ${{ matrix.build_type }}
+
+      - name: Execute CTest
+        run: ctest --test-dir build --output-on-failure -C ${{ matrix.build_type }}
+
+  sanitizers:
+    name: Sanitizers (ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake with AddressSanitizer and UBSan
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=gcc \
+            -DENABLE_WERROR=ON \
+            -DENABLE_ASAN=ON \
+            -DENABLE_UBSAN=ON
+
+      - name: Build with Sanitizers
+        run: cmake --build build
+
+      - name: Run CTest with Sanitizers
+        run: ctest --test-dir build --output-on-failure
+
+  lint-and-format:
+    name: Linting & Formatting Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linting Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format cppcheck
+
+      - name: Verify Code Formatting
+        run: |
+          find chatroom structures \( -name '*.c' -o -name '*.h' \) | xargs clang-format --dry-run --Werror
+
+      - name: Run Cppcheck Analysis
+        run: |
+          cppcheck --error-exitcode=1 --enable=warning,performance,portability --inline-suppr --suppress=missingIncludeSystem -I chatroom/includes chatroom/ structures/
