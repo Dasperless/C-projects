@@ -3,17 +3,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void append(int data, node **head) {
+bool list_append_node(node **head, int data) {
+    if (head == NULL) {
+        return false;
+    }
+
     node *new_node = (node *)malloc(sizeof(node));
     if (new_node == NULL) {
-        return;
+        return false;
     }
     new_node->data = data;
     new_node->next = NULL;
 
     if (*head == NULL) {
         *head = new_node;
-        return;
+        return true;
     }
 
     node *curr_node = *head;
@@ -22,54 +26,86 @@ void append(int data, node **head) {
     }
 
     curr_node->next = new_node;
+    return true;
 }
 
-void print_list(node *head) {
+void append(int data, node **head) {
+    (void)list_append_node(head, data);
+}
+
+void print_list(const node *head) {
     while (head != NULL) {
         printf("[%d] -> %p\n", head->data, (void *)head->next);
         head = head->next;
     }
 }
 
-int min(node *head) {
-    if (head == NULL) {
-        return -1;
+bool list_min(const node *head, int *min_out) {
+    if (head == NULL || min_out == NULL) {
+        return false;
     }
 
     int min_value = head->data;
-    node *curr_node = head;
+    const node *curr_node = head;
     while (curr_node != NULL) {
         if (curr_node->data < min_value) {
             min_value = curr_node->data;
         }
         curr_node = curr_node->next;
     }
-    return min_value;
+    *min_out = min_value;
+    return true;
 }
 
-int max(node *head) {
-    if (head == NULL) {
-        return -1;
+int min(node *head) {
+    int val = -1;
+    if (list_min(head, &val)) {
+        return val;
+    }
+    return -1;
+}
+
+bool list_max(const node *head, int *max_out) {
+    if (head == NULL || max_out == NULL) {
+        return false;
     }
 
     int max_value = head->data;
-    node *curr_node = head;
+    const node *curr_node = head;
     while (curr_node != NULL) {
         if (curr_node->data > max_value) {
             max_value = curr_node->data;
         }
         curr_node = curr_node->next;
     }
-    return max_value;
+    *max_out = max_value;
+    return true;
 }
 
-void free_list(node *head) {
-    node *curr = head;
+int max(node *head) {
+    int val = -1;
+    if (list_max(head, &val)) {
+        return val;
+    }
+    return -1;
+}
+
+void list_free(node **head) {
+    if (head == NULL || *head == NULL) {
+        return;
+    }
+
+    node *curr = *head;
     while (curr != NULL) {
         node *next = curr->next;
         free(curr);
         curr = next;
     }
+    *head = NULL;
+}
+
+void free_list(node **head) {
+    list_free(head);
 }
 
 int main(void) {
@@ -81,8 +117,16 @@ int main(void) {
     append(5, &head);
     append(6, &head);
     print_list(head);
-    printf("Min: %d\n", min(head));
-    printf("Max: %d\n", max(head));
-    free_list(head);
+
+    int min_val = 0;
+    int max_val = 0;
+    if (list_min(head, &min_val)) {
+        printf("Min: %d\n", min_val);
+    }
+    if (list_max(head, &max_val)) {
+        printf("Max: %d\n", max_val);
+    }
+
+    list_free(&head);
     return 0;
 }
