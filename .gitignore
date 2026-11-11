@@ -1,2 +1,59 @@
+# Object and library files
+*.o
+*.obj
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Executables and output directories
+*.exe
+*.out
+*.app
+bin/
+lib/
+chatroom/client
+chatroom/server
+structures/linked-lists/singly-linked-list/linked_list
+
+# Build directories
+build/
+build-*/
+cmake-build-*/
+out/
+
+# CMake temporary and generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeScripts/
+Testing/
+CTestTestfile.cmake
+compile_commands.json
+
+# LLVM / Clang / GCC caches and analysis
+.cache/
+*.gch
+*.dSYM/
+*.gcda
+*.gcno
+*.gcov
+
+# Editor and IDE artifacts
 .vscode/
-!*.*
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+.DS_Store
+Thumbs.db
+tags
+TAGS
+
+# Environment and agent files
+.agents/
+PROJECT.md
