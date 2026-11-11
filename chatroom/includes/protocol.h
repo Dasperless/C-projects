@@ -67,14 +67,14 @@ bool proto_valid_name(const char *name);
 /* ---- client-side input parsing ---- */
 
 typedef enum {
-    INPUT_EMPTY, /* blank line, nothing to do */
-    INPUT_SEND,  /* send a packet built from the fields below */
-    INPUT_HELP,  /* show local help */
-    INPUT_EXIT,  /* leave the chat */
+    INPUT_EMPTY,       /* blank line, nothing to do */
+    INPUT_SEND,        /* send a packet built from the fields below */
+    INPUT_HELP,        /* show local help */
+    INPUT_EXIT,        /* leave the chat */
     INPUT_SENDFILE,    /* target = recipient, text = file path */
     INPUT_FILE_ACCEPT, /* text = transfer id */
     INPUT_FILE_REJECT, /* text = transfer id */
-    INPUT_ERROR  /* invalid input, show `error` */
+    INPUT_ERROR        /* invalid input, show `error` */
 } input_action_t;
 
 typedef struct {

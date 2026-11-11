@@ -198,14 +198,16 @@ static parsed_input_t parse(const char *line) {
 
 static void test_parse_input(void) {
     parsed_input_t p = parse("hello world\n");
-    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PUBLIC && strcmp(p.text, "hello world") == 0);
+    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PUBLIC &&
+           strcmp(p.text, "hello world") == 0);
 
     p = parse("/msg bob hi there  friend");
     assert(p.action == INPUT_SEND && p.type == PKT_MSG_PRIVATE);
     assert(strcmp(p.target, "bob") == 0 && strcmp(p.text, "hi there  friend") == 0);
 
     p = parse("#devs ship it");
-    assert(p.type == PKT_MSG_GROUP && strcmp(p.target, "devs") == 0 && strcmp(p.text, "ship it") == 0);
+    assert(p.type == PKT_MSG_GROUP && strcmp(p.target, "devs") == 0 &&
+           strcmp(p.text, "ship it") == 0);
 
     p = parse("/group devs");
     assert(p.action == INPUT_SEND && p.type == PKT_CMD_JOIN_GRP && strcmp(p.target, "devs") == 0);
@@ -228,7 +230,8 @@ static void test_parse_input(void) {
     p = parse("/sendfile bob /tmp/my photo.png");
     assert(p.action == INPUT_SENDFILE && strcmp(p.target, "bob") == 0);
     assert(strcmp(p.text, "/tmp/my photo.png") == 0);
-    assert(parse("/sendfile bob").action == INPUT_ERROR && parse("/sendfile").action == INPUT_ERROR);
+    assert(parse("/sendfile bob").action == INPUT_ERROR &&
+           parse("/sendfile").action == INPUT_ERROR);
     p = parse("/fileaccept 7");
     assert(p.action == INPUT_FILE_ACCEPT && strcmp(p.text, "7") == 0);
     p = parse("/filereject 7");

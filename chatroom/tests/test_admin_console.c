@@ -10,12 +10,12 @@ static void cleanup_child(void) {
     }
 }
 
-#define CHECK(cond)                                                           \
-    do {                                                                      \
-        if (!(cond)) {                                                        \
-            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond); \
-            exit(1);                                                          \
-        }                                                                     \
+#define CHECK(cond)                                                                                \
+    do {                                                                                           \
+        if (!(cond)) {                                                                             \
+            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond);                      \
+            exit(1);                                                                               \
+        }                                                                                          \
     } while (0)
 
 typedef struct {
