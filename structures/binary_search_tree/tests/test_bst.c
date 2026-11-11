@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include "bst.h"
 
 #include <assert.h>
