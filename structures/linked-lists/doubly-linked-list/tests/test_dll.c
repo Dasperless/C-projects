@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include "dll.h"
 
 #include <assert.h>

@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include "queue.h"
 
 #include <assert.h>
