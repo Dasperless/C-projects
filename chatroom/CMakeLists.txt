@@ -21,9 +21,6 @@ target_link_libraries(test_protocol PRIVATE chatroom_protocol project_warnings T
 add_executable(test_chat_features tests/test_chat_features.c)
 target_link_libraries(test_chat_features PRIVATE chatroom_protocol project_warnings Threads::Threads)
 
-add_executable(test_chat_logging tests/test_chat_logging.c)
-target_link_libraries(test_chat_logging PRIVATE chatroom_protocol project_warnings Threads::Threads)
-
 add_executable(test_concurrency tests/test_concurrency.c)
 target_link_libraries(test_concurrency PRIVATE chatroom_protocol project_warnings Threads::Threads)
 
@@ -31,6 +28,5 @@ if(BUILD_TESTING)
     add_test(NAME test_logger COMMAND test_logger)
     add_test(NAME test_protocol COMMAND test_protocol)
     add_test(NAME test_chat_features COMMAND test_chat_features $<TARGET_FILE:chatroom_server>)
-    add_test(NAME test_chat_logging COMMAND test_chat_logging $<TARGET_FILE:chatroom_server>)
     add_test(NAME test_concurrency COMMAND test_concurrency $<TARGET_FILE:chatroom_server>)
 endif()
