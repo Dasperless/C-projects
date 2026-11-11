@@ -100,12 +100,12 @@ void fs_sender_close(fs_sender_t *s);
 /* ---- receiver ---- */
 
 typedef enum {
-    FS_CHUNK_MORE, /* stored, more expected */
-    FS_CHUNK_DONE, /* final chunk stored, size and CRC verified, file moved into place */
-    FS_ERR_ORDER,  /* wrong transfer id or out-of-sequence chunk */
-    FS_ERR_SIZE,   /* chunk exceeds the declared size / inconsistent last flag */
-    FS_ERR_CRC,    /* checksum mismatch (partial file removed) */
-    FS_ERR_IO      /* write/rename failure */
+    FS_CHUNK_MORE,     /* stored, more expected */
+    FS_CHUNK_DONE,     /* final chunk stored, size and CRC verified, file moved into place */
+    FS_ERR_ORDER,      /* wrong transfer id or out-of-sequence chunk */
+    FS_ERR_SIZE,       /* chunk exceeds the declared size / inconsistent last flag */
+    FS_ERR_CRC,        /* checksum mismatch (partial file removed) */
+    FS_ERR_IO          /* write/rename failure */
 } fs_chunk_status_t;
 
 typedef struct {
@@ -121,8 +121,7 @@ typedef struct {
 } fs_receiver_t;
 
 /* Creates `dir` (mode 0700) if needed and reserves a unique "<name>.part" file inside it.
- * `safe_name` must already be sanitized. Existing files are never overwritten (name.1, name.2 ...).
- */
+ * `safe_name` must already be sanitized. Existing files are never overwritten (name.1, name.2 ...). */
 bool fs_receiver_open(fs_receiver_t *r, const char *dir, uint32_t id, const char *safe_name,
                       uint64_t expected_size, uint32_t expected_crc);
 fs_chunk_status_t fs_receiver_chunk(fs_receiver_t *r, const fs_chunk_view_t *chunk);
