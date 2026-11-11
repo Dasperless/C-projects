@@ -186,8 +186,8 @@ static void test_container_search(void) {
 
 static void test_container_reverse(void) {
     for (size_t n = 0; n <= 6; n++) {
-        int vals[6];
-        int rev[6];
+        int vals[6] = {0};
+        int rev[6] = {0};
         for (size_t i = 0; i < n; i++) {
             vals[i] = (int)i;
             rev[n - 1 - i] = (int)i;
@@ -213,7 +213,7 @@ static void test_container_sort(void) {
     const int *cases[] = {sorted, reversed, dups};
     const size_t lens[] = {4, 4, 6};
     for (size_t c = 0; c < 3; c++) {
-        int want[6];
+        int want[6] = {0};
         for (size_t i = 0; i < lens[c]; i++) {
             want[i] = cases[c][i];
         }
