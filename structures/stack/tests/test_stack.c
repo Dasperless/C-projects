@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include "stack.h"
 
 #include <assert.h>

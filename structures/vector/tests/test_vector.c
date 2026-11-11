@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include "vector.h"
 
 #include <assert.h>

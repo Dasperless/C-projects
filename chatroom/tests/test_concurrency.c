@@ -154,7 +154,8 @@ int main(void) {
     printf("[TEST 3 PASSED] 10 clients cleanly disconnected.\n");
 
     /* TEST 4: Reconnects Beyond 49 Clients (Fix for lockout after 49 clients) */
-    printf("[TEST 4] Lockout Fix: Testing 60 sequential client connects/disconnects (capacity 50)...\n");
+    printf("[TEST 4] Lockout Fix: Testing 60 sequential client connects/disconnects (capacity "
+           "50)...\n");
     for (int i = 0; i < 60; i++) {
         char client_name[32];
         snprintf(client_name, sizeof(client_name), "seq_usr_%d", i);
@@ -169,10 +170,12 @@ int main(void) {
         close(sock);
         usleep(5000); /* 5ms */
     }
-    printf("[TEST 4 PASSED] All 60 sequential clients connected and disconnected successfully without lockout!\n");
+    printf("[TEST 4 PASSED] All 60 sequential clients connected and disconnected successfully "
+           "without lockout!\n");
 
     /* TEST 5: Capacity limit (50 concurrent) and dynamic slot reuse */
-    printf("[TEST 5] Capacity limit & Slot Reclaim: Filling server to 50 concurrent connections...\n");
+    printf(
+        "[TEST 5] Capacity limit & Slot Reclaim: Filling server to 50 concurrent connections...\n");
     int max_socks[50];
     for (int i = 0; i < 50; i++) {
         char client_name[32];
