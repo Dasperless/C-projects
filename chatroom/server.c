@@ -260,33 +260,33 @@ static void *handle_client(void *arg) {
             break;
         }
         switch (hdr.type) {
-            case PKT_MSG_PUBLIC:
-                if (hdr.payload_len > 0) {
-                    pthread_mutex_lock(&clients_mutex);
-                    fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
-                    pthread_mutex_unlock(&clients_mutex);
-                    printf("%s: %s\n", client->name, payload);
-                    fflush(stdout);
-                }
-                break;
-            case PKT_MSG_PRIVATE:
-                handle_private(client, hdr.recipient_or_group, payload);
-                break;
-            case PKT_MSG_GROUP:
-                handle_group_msg(client, hdr.recipient_or_group, payload);
-                break;
-            case PKT_CMD_USERS:
-                handle_users(client);
-                break;
-            case PKT_CMD_JOIN_GRP:
-                handle_join_group(client, hdr.recipient_or_group);
-                break;
-            case PKT_CMD_LEAVE_GRP:
-                handle_leave_group(client, hdr.recipient_or_group);
-                break;
-            default:
-                reply_error(client, "Unsupported packet type");
-                break;
+        case PKT_MSG_PUBLIC:
+            if (hdr.payload_len > 0) {
+                pthread_mutex_lock(&clients_mutex);
+                fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
+                pthread_mutex_unlock(&clients_mutex);
+                printf("%s: %s\n", client->name, payload);
+                fflush(stdout);
+            }
+            break;
+        case PKT_MSG_PRIVATE:
+            handle_private(client, hdr.recipient_or_group, payload);
+            break;
+        case PKT_MSG_GROUP:
+            handle_group_msg(client, hdr.recipient_or_group, payload);
+            break;
+        case PKT_CMD_USERS:
+            handle_users(client);
+            break;
+        case PKT_CMD_JOIN_GRP:
+            handle_join_group(client, hdr.recipient_or_group);
+            break;
+        case PKT_CMD_LEAVE_GRP:
+            handle_leave_group(client, hdr.recipient_or_group);
+            break;
+        default:
+            reply_error(client, "Unsupported packet type");
+            break;
         }
     }
 

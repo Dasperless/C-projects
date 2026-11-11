@@ -87,21 +87,21 @@ static void *receive_msg_handler(void *arg) {
             break;
         }
         switch (hdr.type) {
-            case PKT_MSG_PUBLIC:
-                printf("%s: %s\n", hdr.sender, payload);
-                break;
-            case PKT_MSG_PRIVATE:
-                printf("[private from %s] %s\n", hdr.sender, payload);
-                break;
-            case PKT_MSG_GROUP:
-                printf("[#%s] %s: %s\n", hdr.recipient_or_group, hdr.sender, payload);
-                break;
-            case PKT_SERVER_ERROR:
-                printf("! %s\n", payload);
-                break;
-            default:
-                printf("* %s\n", payload);
-                break;
+        case PKT_MSG_PUBLIC:
+            printf("%s: %s\n", hdr.sender, payload);
+            break;
+        case PKT_MSG_PRIVATE:
+            printf("[private from %s] %s\n", hdr.sender, payload);
+            break;
+        case PKT_MSG_GROUP:
+            printf("[#%s] %s: %s\n", hdr.recipient_or_group, hdr.sender, payload);
+            break;
+        case PKT_SERVER_ERROR:
+            printf("! %s\n", payload);
+            break;
+        default:
+            printf("* %s\n", payload);
+            break;
         }
         fflush(stdout);
     }
@@ -134,8 +134,9 @@ int main(int argc, char *argv[]) {
     str_trim_lf(name, (int)strlen(name));
 
     while (!proto_valid_name(name)) {
-        printf("Name must be 2-%d characters of letters, digits, '_', '-' or '.'.\nEnter your name: ",
-               PROTO_NAME_LEN - 2);
+        printf(
+            "Name must be 2-%d characters of letters, digits, '_', '-' or '.'.\nEnter your name: ",
+            PROTO_NAME_LEN - 2);
         fflush(stdout);
         if (fgets(name, (int)sizeof(name), stdin) == NULL) {
             return EXIT_FAILURE;

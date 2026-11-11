@@ -1,3 +1,4 @@
+#undef NDEBUG
 #define _DEFAULT_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #include "protocol.h"
@@ -197,14 +198,16 @@ static parsed_input_t parse(const char *line) {
 
 static void test_parse_input(void) {
     parsed_input_t p = parse("hello world\n");
-    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PUBLIC && strcmp(p.text, "hello world") == 0);
+    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PUBLIC &&
+           strcmp(p.text, "hello world") == 0);
 
     p = parse("/msg bob hi there  friend");
     assert(p.action == INPUT_SEND && p.type == PKT_MSG_PRIVATE);
     assert(strcmp(p.target, "bob") == 0 && strcmp(p.text, "hi there  friend") == 0);
 
     p = parse("#devs ship it");
-    assert(p.type == PKT_MSG_GROUP && strcmp(p.target, "devs") == 0 && strcmp(p.text, "ship it") == 0);
+    assert(p.type == PKT_MSG_GROUP && strcmp(p.target, "devs") == 0 &&
+           strcmp(p.text, "ship it") == 0);
 
     p = parse("/group devs");
     assert(p.action == INPUT_SEND && p.type == PKT_CMD_JOIN_GRP && strcmp(p.target, "devs") == 0);
