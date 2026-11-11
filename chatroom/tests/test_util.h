@@ -1,4 +1,3 @@
-#undef NDEBUG
 #ifndef CHATROOM_TEST_UTIL_H
 #define CHATROOM_TEST_UTIL_H
 
