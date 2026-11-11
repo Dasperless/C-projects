@@ -42,12 +42,12 @@ static inline int tc_connect(int port) {
 }
 
 /* Forks the server binary and waits (up to ~5 s) until it accepts connections. */
-static inline pid_t tc_start_server(const char *bin, int port) {
+static inline pid_t tc_start_server_log(const char *bin, int port, const char *logfile) {
     pid_t pid = fork();
     if (pid == 0) {
         char port_str[16];
         snprintf(port_str, sizeof(port_str), "%d", port);
-        execl(bin, bin, TC_IP, port_str, (char *)NULL);
+        execl(bin, bin, TC_IP, port_str, logfile, (char *)NULL);
         perror("execl failed");
         _exit(127);
     }
@@ -62,6 +62,11 @@ static inline pid_t tc_start_server(const char *bin, int port) {
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
     return -1;
+}
+
+/* Starts the server with its log discarded. */
+static inline pid_t tc_start_server(const char *bin, int port) {
+    return tc_start_server_log(bin, port, "/dev/null");
 }
 
 static inline int tc_stop_server(pid_t pid) {
