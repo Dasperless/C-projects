@@ -1,3 +1,4 @@
+#undef NDEBUG
 #define _POSIX_C_SOURCE 200809L
 #include "fileshare.h"
 
@@ -30,8 +31,10 @@ static void test_sanitize(void) {
     assert(fs_sanitize_filename("photo.png", o, sizeof(o)) && strcmp(o, "photo.png") == 0);
     assert(fs_sanitize_filename("../../etc/passwd", o, sizeof(o)) && strcmp(o, "passwd") == 0);
     assert(fs_sanitize_filename("/etc/shadow", o, sizeof(o)) && strcmp(o, "shadow") == 0);
-    assert(fs_sanitize_filename("C:\\Windows\\evil.exe", o, sizeof(o)) && strcmp(o, "evil.exe") == 0);
-    assert(fs_sanitize_filename("my file (1).txt", o, sizeof(o)) && strcmp(o, "my_file__1_.txt") == 0);
+    assert(fs_sanitize_filename("C:\\Windows\\evil.exe", o, sizeof(o)) &&
+           strcmp(o, "evil.exe") == 0);
+    assert(fs_sanitize_filename("my file (1).txt", o, sizeof(o)) &&
+           strcmp(o, "my_file__1_.txt") == 0);
     assert(fs_sanitize_filename(".bashrc", o, sizeof(o)) && strcmp(o, "_bashrc") == 0);
     assert(fs_sanitize_filename("..", o, sizeof(o)) && strchr(o, '.') == NULL);
     assert(!fs_sanitize_filename("", o, sizeof(o)) && !fs_sanitize_filename("dir/", o, sizeof(o)));
@@ -94,7 +97,8 @@ static void test_codecs(void) {
     ctl[cn] = '\0';
     uint32_t id = 0;
     const char *reason = NULL;
-    assert(cn == 8 && fs_ctl_decode(ctl, cn, &id, &reason) && id == 5 && strcmp(reason, "boom") == 0);
+    assert(cn == 8 && fs_ctl_decode(ctl, cn, &id, &reason) && id == 5 &&
+           strcmp(reason, "boom") == 0);
     assert(!fs_ctl_decode(ctl, 3, &id, &reason));
 }
 

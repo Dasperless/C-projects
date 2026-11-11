@@ -257,9 +257,9 @@ bool fs_receiver_open(fs_receiver_t *r, const char *dir, uint32_t id, const char
     }
     for (int attempt = 0; attempt < 1000; attempt++) {
         char candidate[FS_PATH_MAX];
-        int n = attempt == 0 ? snprintf(candidate, sizeof(candidate), "%s/%s", dir, safe_name)
-                             : snprintf(candidate, sizeof(candidate), "%s/%s.%d", dir, safe_name,
-                                        attempt);
+        int n = attempt == 0
+                    ? snprintf(candidate, sizeof(candidate), "%s/%s", dir, safe_name)
+                    : snprintf(candidate, sizeof(candidate), "%s/%s.%d", dir, safe_name, attempt);
         if (n < 0 || (size_t)n + 6 >= sizeof(candidate) || exists(candidate)) {
             continue;
         }
