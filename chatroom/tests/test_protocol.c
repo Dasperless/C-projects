@@ -189,6 +189,50 @@ static void test_valid_names(void) {
     assert(proto_valid_name("abcdefghijklmnopqrstuvwxyz0123"));   /* 30 chars */
 }
 
+static parsed_input_t parse(const char *line) {
+    parsed_input_t p;
+    proto_parse_input(line, &p);
+    return p;
+}
+
+static void test_parse_input(void) {
+    parsed_input_t p = parse("hello world\n");
+    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PUBLIC && strcmp(p.text, "hello world") == 0);
+
+    p = parse("/msg bob hi there  friend");
+    assert(p.action == INPUT_SEND && p.type == PKT_MSG_PRIVATE);
+    assert(strcmp(p.target, "bob") == 0 && strcmp(p.text, "hi there  friend") == 0);
+
+    p = parse("#devs ship it");
+    assert(p.type == PKT_MSG_GROUP && strcmp(p.target, "devs") == 0 && strcmp(p.text, "ship it") == 0);
+
+    p = parse("/group devs");
+    assert(p.action == INPUT_SEND && p.type == PKT_CMD_JOIN_GRP && strcmp(p.target, "devs") == 0);
+    p = parse("/leave devs\r\n");
+    assert(p.type == PKT_CMD_LEAVE_GRP && strcmp(p.target, "devs") == 0);
+    p = parse("/users");
+    assert(p.action == INPUT_SEND && p.type == PKT_CMD_USERS);
+
+    assert(parse("/exit").action == INPUT_EXIT);
+    assert(parse("/help").action == INPUT_HELP);
+    assert(parse("").action == INPUT_EMPTY && parse("\n").action == INPUT_EMPTY);
+    assert(parse(NULL).action == INPUT_EMPTY);
+
+    assert(parse("/msg").action == INPUT_ERROR);
+    assert(parse("/msg bob").action == INPUT_ERROR);
+    assert(parse("/group").action == INPUT_ERROR);
+    assert(parse("#devs").action == INPUT_ERROR && parse("#").action == INPUT_ERROR);
+    assert(parse("/bogus x").action == INPUT_ERROR);
+    assert(parse("/msg bob x").error == NULL);
+
+    char big[PROTO_MAX_PAYLOAD + 10];
+    memset(big, 'a', sizeof(big));
+    big[sizeof(big) - 1] = '\0';
+    assert(parse(big).action == INPUT_ERROR);
+    big[PROTO_MAX_PAYLOAD] = '\0';
+    assert(parse(big).action == INPUT_SEND);
+}
+
 int main(void) {
     test_roundtrip();
     test_header_layout();
@@ -198,6 +242,7 @@ int main(void) {
     test_eof_handling();
     test_name_forced_termination();
     test_valid_names();
+    test_parse_input();
     printf("All protocol tests passed.\n");
     return 0;
 }
