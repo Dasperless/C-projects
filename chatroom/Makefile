@@ -4,23 +4,31 @@ LDFLAGS ?= -pthread
 
 SERVER_BIN = server
 CLIENT_BIN = client
-TEST_BIN = test_concurrency
+TEST_BINS = test_protocol test_chat_features test_concurrency
 
 .PHONY: all clean test
 
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
-$(SERVER_BIN): server.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+$(SERVER_BIN): server.c protocol.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(CLIENT_BIN): client.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+$(CLIENT_BIN): client.c protocol.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(TEST_BIN): tests/test_concurrency.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+test_protocol: tests/test_protocol.c protocol.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-test: all $(TEST_BIN)
-	./$(TEST_BIN)
+test_chat_features: tests/test_chat_features.c protocol.c
+	$(CC) $(CFLAGS) -Itests -o $@ $^ $(LDFLAGS)
+
+test_concurrency: tests/test_concurrency.c protocol.c
+	$(CC) $(CFLAGS) -Itests -o $@ $^ $(LDFLAGS)
+
+test: all $(TEST_BINS)
+	./test_protocol
+	./test_chat_features ./$(SERVER_BIN)
+	./test_concurrency ./$(SERVER_BIN)
 
 clean:
-	rm -f $(SERVER_BIN) $(CLIENT_BIN) $(TEST_BIN) *.o
+	rm -f $(SERVER_BIN) $(CLIENT_BIN) $(TEST_BINS) *.o

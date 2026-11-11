@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+#include "protocol.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -11,27 +14,62 @@
 #include <unistd.h>
 
 #define MAX_CLIENTS 50
-#define BUFFER_SZ 2048
-#define NAME_LEN 32
+#define MAX_GROUPS_PER_CLIENT 8
 
 typedef struct {
     struct sockaddr_in address;
     int sockfd;
     int uid;
-    char name[NAME_LEN];
+    char name[PROTO_NAME_LEN]; /* empty until the handshake succeeds */
+    char groups[MAX_GROUPS_PER_CLIENT][PROTO_NAME_LEN];
+    int group_count;
 } client_t;
 
 static int client_count = 0;
 static int uid_counter = 10;
 static client_t *clients[MAX_CLIENTS] = {NULL};
+/* Guards the clients table and every socket write (so frames never interleave). */
 static pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void str_trim_lf(char *arr, int length) {
-    for (int i = 0; i < length; i++) {
-        if (arr[i] == '\n' || arr[i] == '\r') {
-            arr[i] = '\0';
-            break;
+/* ---- helpers: *_locked functions require clients_mutex to be held ---- */
+
+static void send_to_locked(const client_t *to, packet_type_t type, const char *sender,
+                           const char *target, const char *text) {
+    (void)packet_send(to->sockfd, type, sender, target, text, strlen(text));
+}
+
+static client_t *find_by_name_locked(const char *name) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (clients[i] != NULL && clients[i]->name[0] != '\0' &&
+            strcmp(clients[i]->name, name) == 0) {
+            return clients[i];
         }
+    }
+    return NULL;
+}
+
+static bool is_member(const client_t *c, const char *group) {
+    for (int i = 0; i < c->group_count; i++) {
+        if (strcmp(c->groups[i], group) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Sends to every registered client except skip_uid. If group is non-NULL only its members
+ * receive the packet. */
+static void fanout_locked(packet_type_t type, const char *sender, const char *target,
+                          const char *text, int skip_uid, const char *group) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        client_t *c = clients[i];
+        if (c == NULL || c->name[0] == '\0' || c->uid == skip_uid) {
+            continue;
+        }
+        if (group != NULL && !is_member(c, group)) {
+            continue;
+        }
+        send_to_locked(c, type, sender, target, text);
     }
 }
 
@@ -59,77 +97,211 @@ static void remove_client(int uid) {
     pthread_mutex_unlock(&clients_mutex);
 }
 
-static void send_message(const char *s, int sender_uid) {
+/* ---- command handlers ---- */
+
+static void reply_error(client_t *client, const char *text) {
+    pthread_mutex_lock(&clients_mutex);
+    send_to_locked(client, PKT_SERVER_ERROR, "server", client->name, text);
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_users(client_t *client) {
+    char list[PROTO_MAX_PAYLOAD];
+    int count = 0;
+    size_t used = 0;
+    list[0] = '\0';
     pthread_mutex_lock(&clients_mutex);
     for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i] != NULL && clients[i]->uid != sender_uid) {
-            ssize_t sent = send(clients[i]->sockfd, s, strlen(s), 0);
-            (void)sent;
+        if (clients[i] != NULL && clients[i]->name[0] != '\0') {
+            int n = snprintf(list + used, sizeof(list) - used, "%s%s", count ? ", " : "",
+                             clients[i]->name);
+            if (n > 0 && used + (size_t)n < sizeof(list)) {
+                used += (size_t)n;
+            }
+            count++;
         }
+    }
+    char out[PROTO_MAX_PAYLOAD];
+    snprintf(out, sizeof(out), "Connected users (%d): %.1900s", count, list);
+    send_to_locked(client, PKT_SERVER_INFO, "server", client->name, out);
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_private(client_t *client, const char *to, const char *text) {
+    pthread_mutex_lock(&clients_mutex);
+    client_t *dest = find_by_name_locked(to);
+    if (dest == NULL) {
+        char err[PROTO_MAX_PAYLOAD];
+        snprintf(err, sizeof(err), "User '%.31s' not found", to);
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name, err);
+    } else if (dest == client) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "Cannot send a private message to yourself");
+    } else {
+        send_to_locked(dest, PKT_MSG_PRIVATE, client->name, dest->name, text);
     }
     pthread_mutex_unlock(&clients_mutex);
 }
 
+static bool valid_group_name(const char *g) {
+    size_t n = strlen(g);
+    if (n < 1 || n > PROTO_NAME_LEN - 2) {
+        return false;
+    }
+    for (size_t i = 0; i < n; i++) {
+        char c = g[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+              c == '_' || c == '-')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void handle_join_group(client_t *client, const char *group) {
+    if (!valid_group_name(group)) {
+        reply_error(client, "Invalid group name (use letters, digits, '_' or '-')");
+        return;
+    }
+    pthread_mutex_lock(&clients_mutex);
+    if (is_member(client, group)) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "You are already in that group");
+    } else if (client->group_count >= MAX_GROUPS_PER_CLIENT) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "Group membership limit reached");
+    } else {
+        snprintf(client->groups[client->group_count++], PROTO_NAME_LEN, "%s", group);
+        char out[PROTO_MAX_PAYLOAD];
+        snprintf(out, sizeof(out), "Joined group #%s", group);
+        send_to_locked(client, PKT_SERVER_INFO, "server", client->name, out);
+        snprintf(out, sizeof(out), "%s joined #%s", client->name, group);
+        fanout_locked(PKT_SERVER_INFO, "server", group, out, client->uid, group);
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_leave_group(client_t *client, const char *group) {
+    pthread_mutex_lock(&clients_mutex);
+    int idx = -1;
+    for (int i = 0; i < client->group_count; i++) {
+        if (strcmp(client->groups[i], group) == 0) {
+            idx = i;
+        }
+    }
+    if (idx < 0) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "You are not in that group");
+    } else {
+        for (int i = idx; i + 1 < client->group_count; i++) {
+            memcpy(client->groups[i], client->groups[i + 1], PROTO_NAME_LEN);
+        }
+        client->group_count--;
+        char out[PROTO_MAX_PAYLOAD];
+        snprintf(out, sizeof(out), "Left group #%s", group);
+        send_to_locked(client, PKT_SERVER_INFO, "server", client->name, out);
+        snprintf(out, sizeof(out), "%s left #%s", client->name, group);
+        fanout_locked(PKT_SERVER_INFO, "server", group, out, client->uid, group);
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_group_msg(client_t *client, const char *group, const char *text) {
+    pthread_mutex_lock(&clients_mutex);
+    if (!is_member(client, group)) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "Join the group first with /group <name>");
+    } else {
+        fanout_locked(PKT_MSG_GROUP, client->name, group, text, client->uid, group);
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+/* Performs the handshake. Returns true when the client is registered under a unique name. */
+static bool do_handshake(client_t *client) {
+    packet_header_t hdr;
+    char payload[PROTO_MAX_PAYLOAD + 1];
+    if (packet_recv(client->sockfd, &hdr, payload) != 1 || hdr.type != PKT_HANDSHAKE) {
+        return false;
+    }
+    if (!proto_valid_name(hdr.sender)) {
+        reply_error(client, "Invalid name: use 2-30 characters of letters, digits, '_', '-', '.'");
+        return false;
+    }
+    pthread_mutex_lock(&clients_mutex);
+    if (find_by_name_locked(hdr.sender) != NULL) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", "", "Name already in use");
+        pthread_mutex_unlock(&clients_mutex);
+        return false;
+    }
+    snprintf(client->name, sizeof(client->name), "%s", hdr.sender);
+    send_to_locked(client, PKT_SERVER_INFO, "server", client->name, "Welcome! Type /help.");
+    char out[PROTO_MAX_PAYLOAD];
+    snprintf(out, sizeof(out), "%s has joined the chat", client->name);
+    fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+    pthread_mutex_unlock(&clients_mutex);
+    printf("%s\n", out);
+    fflush(stdout);
+    return true;
+}
+
 static void *handle_client(void *arg) {
     client_t *client = (client_t *)arg;
-    char buff_out[BUFFER_SZ];
-    char name_buff[NAME_LEN];
-    memset(name_buff, 0, sizeof(name_buff));
+    packet_header_t hdr;
+    char payload[PROTO_MAX_PAYLOAD + 1];
+    bool registered = do_handshake(client);
 
-    /* Receive client username */
-    ssize_t r = recv(client->sockfd, name_buff, NAME_LEN - 1, 0);
-    if (r <= 0 || strlen(name_buff) < 2 || strlen(name_buff) >= NAME_LEN - 1) {
-        printf("Didn't enter valid name, disconnecting.\n");
-        close(client->sockfd);
-        remove_client(client->uid);
-        free(client);
-        return NULL;
-    }
-
-    str_trim_lf(name_buff, (int)strlen(name_buff));
-    strncpy(client->name, name_buff, sizeof(client->name) - 1);
-    client->name[sizeof(client->name) - 1] = '\0';
-
-    snprintf(buff_out, sizeof(buff_out), "%s has joined the chat\n", client->name);
-    printf("%s", buff_out);
-    fflush(stdout);
-    send_message(buff_out, client->uid);
-
-    /* Continuous message reception loop */
-    while (1) {
-        memset(buff_out, 0, sizeof(buff_out));
-        ssize_t receive = recv(client->sockfd, buff_out, BUFFER_SZ - 1, 0);
-        if (receive > 0) {
-            buff_out[receive] = '\0';
-            str_trim_lf(buff_out, (int)strlen(buff_out));
-
-            if (strlen(buff_out) == 0) {
-                continue;
+    while (registered) {
+        int r = packet_recv(client->sockfd, &hdr, payload);
+        if (r != 1) {
+            break; /* disconnect or protocol violation */
+        }
+        if (hdr.type == PKT_DISCONNECT) {
+            break;
+        }
+        switch (hdr.type) {
+        case PKT_MSG_PUBLIC:
+            if (hdr.payload_len > 0) {
+                pthread_mutex_lock(&clients_mutex);
+                fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
+                pthread_mutex_unlock(&clients_mutex);
+                printf("%s: %s\n", client->name, payload);
+                fflush(stdout);
             }
-
-            if (strcmp(buff_out, "/exit") == 0) {
-                break;
-            }
-
-            char formatted[BUFFER_SZ + NAME_LEN + 10];
-            snprintf(formatted, sizeof(formatted), "%s: %s\n", client->name, buff_out);
-            send_message(formatted, client->uid);
-            printf("%s: %s\n", client->name, buff_out);
-            fflush(stdout);
-        } else {
-            /* Client disconnected or error occurred */
+            break;
+        case PKT_MSG_PRIVATE:
+            handle_private(client, hdr.recipient_or_group, payload);
+            break;
+        case PKT_MSG_GROUP:
+            handle_group_msg(client, hdr.recipient_or_group, payload);
+            break;
+        case PKT_CMD_USERS:
+            handle_users(client);
+            break;
+        case PKT_CMD_JOIN_GRP:
+            handle_join_group(client, hdr.recipient_or_group);
+            break;
+        case PKT_CMD_LEAVE_GRP:
+            handle_leave_group(client, hdr.recipient_or_group);
+            break;
+        default:
+            reply_error(client, "Unsupported packet type");
             break;
         }
     }
 
-    /* Announce departure and clean up */
-    snprintf(buff_out, sizeof(buff_out), "%s has left the chat\n", client->name);
-    printf("%s", buff_out);
-    fflush(stdout);
-    send_message(buff_out, client->uid);
-
-    close(client->sockfd);
+    /* Announce departure, deregister, release resources */
+    if (registered) {
+        char out[PROTO_MAX_PAYLOAD];
+        snprintf(out, sizeof(out), "%s has left the chat", client->name);
+        pthread_mutex_lock(&clients_mutex);
+        fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+        pthread_mutex_unlock(&clients_mutex);
+        printf("%s\n", out);
+        fflush(stdout);
+    }
     remove_client(client->uid);
+    close(client->sockfd);
     free(client);
     return NULL;
 }
@@ -199,21 +371,21 @@ int main(int argc, char *argv[]) {
         if (client_count >= MAX_CLIENTS) {
             pthread_mutex_unlock(&clients_mutex);
             fprintf(stderr, "Max clients reached. Rejected connection.\n");
+            (void)packet_send(connfd, PKT_SERVER_ERROR, "server", "", "Server full", 11);
             close(connfd);
             continue;
         }
         pthread_mutex_unlock(&clients_mutex);
 
-        client_t *newclient = (client_t *)malloc(sizeof(client_t));
+        client_t *newclient = (client_t *)calloc(1, sizeof(client_t));
         if (!newclient) {
-            perror("Error: malloc failed for new client");
+            perror("Error: calloc failed for new client");
             close(connfd);
             continue;
         }
         newclient->address = client_addr;
         newclient->sockfd = connfd;
         newclient->uid = ++uid_counter;
-        memset(newclient->name, 0, sizeof(newclient->name));
 
         queue_client(newclient);
 
