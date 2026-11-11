@@ -15,14 +15,14 @@ static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const char *level_name(log_level_t level) {
     switch (level) {
-        case LOG_LEVEL_DEBUG:
-            return "DEBUG";
-        case LOG_LEVEL_INFO:
-            return "INFO";
-        case LOG_LEVEL_WARN:
-            return "WARN";
-        case LOG_LEVEL_ERROR:
-            return "ERROR";
+    case LOG_LEVEL_DEBUG:
+        return "DEBUG";
+    case LOG_LEVEL_INFO:
+        return "INFO";
+    case LOG_LEVEL_WARN:
+        return "WARN";
+    case LOG_LEVEL_ERROR:
+        return "ERROR";
     }
     return "INFO";
 }

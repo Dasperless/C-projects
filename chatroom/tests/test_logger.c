@@ -1,3 +1,4 @@
+#undef NDEBUG
 #define _POSIX_C_SOURCE 200809L
 #include "logger.h"
 
@@ -98,7 +99,8 @@ static void test_format_and_escaping(void) {
     remove(path);
     assert(logger_init(path));
     logger_log(LOG_LEVEL_INFO, "CONN", "Client '%s' connected from %s:%d", "alice", "10.0.0.1", 5);
-    logger_log(LOG_LEVEL_INFO, "MSG", "'a' -> ALL: \"x\"\n[2000-01-01T00:00:00Z] [ERROR] [FAKE] forged");
+    logger_log(LOG_LEVEL_INFO, "MSG",
+               "'a' -> ALL: \"x\"\n[2000-01-01T00:00:00Z] [ERROR] [FAKE] forged");
     logger_log(LOG_LEVEL_ERROR, "DISC", "ctrl\x01\x02 done");
     logger_log(LOG_LEVEL_DEBUG, "GRP", "debug");
     logger_close();

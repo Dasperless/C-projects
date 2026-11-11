@@ -2,12 +2,12 @@
 
 #include <assert.h>
 
-#define CHECK(cond)                                                           \
-    do {                                                                      \
-        if (!(cond)) {                                                        \
-            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond); \
-            exit(1);                                                          \
-        }                                                                     \
+#define CHECK(cond)                                                                                \
+    do {                                                                                           \
+        if (!(cond)) {                                                                             \
+            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond);                      \
+            exit(1);                                                                               \
+        }                                                                                          \
     } while (0)
 
 static char log_path[64];
@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
     CHECK(tc_send_text(b, PKT_CMD_LEAVE_GRP, "bob", "devs", NULL));
     CHECK(tc_wait_for(b, PKT_SERVER_INFO, NULL, "Left group", 2000));
     /* a message with a newline must not forge a second log entry */
-    CHECK(tc_send_text(a, PKT_MSG_PUBLIC, "alice", "", "line1\n[2000-01-01T00:00:00Z] [ERROR] [FAKE] x"));
+    CHECK(tc_send_text(a, PKT_MSG_PUBLIC, "alice", "",
+                       "line1\n[2000-01-01T00:00:00Z] [ERROR] [FAKE] x"));
     CHECK(tc_wait_for(b, PKT_MSG_PUBLIC, "alice", "line1", 2000));
     /* a failed private message is not logged as delivered */
     CHECK(tc_send_text(a, PKT_MSG_PRIVATE, "alice", "ghost", "nobody home"));
@@ -95,7 +96,8 @@ int main(int argc, char **argv) {
     CHECK(strstr(log, "[INFO] [GRP]  'bob' left #devs") != NULL);
     CHECK(strstr(log, "[INFO] [DISC] Client 'carol' disconnected") != NULL);
     CHECK(strstr(log, "ghost") == NULL);
-    CHECK(count(log, "[FAKE]") == 1 && strstr(log, "\\n[2000-01-01") != NULL); /* escaped, same line */
+    CHECK(count(log, "[FAKE]") == 1 &&
+          strstr(log, "\\n[2000-01-01") != NULL); /* escaped, same line */
     check_all_lines_well_formed(log);
 
     /* restart: previous entries survive, file is appended to */
