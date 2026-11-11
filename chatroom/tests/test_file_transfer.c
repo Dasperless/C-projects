@@ -1,17 +1,15 @@
-#define _DEFAULT_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#include "fileshare.h"
 #include "test_util.h"
+#include "fileshare.h"
 
 #include <assert.h>
 #include <sys/stat.h>
 
-#define CHECK(cond)                                                                                \
-    do {                                                                                           \
-        if (!(cond)) {                                                                             \
-            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond);                      \
-            exit(1);                                                                               \
-        }                                                                                          \
+#define CHECK(cond)                                                           \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            fprintf(stderr, "FAILED %s:%d: %s\n", __FILE__, __LINE__, #cond); \
+            exit(1);                                                          \
+        }                                                                     \
     } while (0)
 
 static int port;
@@ -70,8 +68,7 @@ static int send_ctl_packet(int fd, packet_type_t t, const char *me, const char *
     return packet_send(fd, t, me, to, ctl, n) ? 1 : 0;
 }
 
-/* Runs the offer handshake up to the recipient's decision. Returns the transfer id (0 on failure).
- */
+/* Runs the offer handshake up to the recipient's decision. Returns the transfer id (0 on failure). */
 static uint32_t offer_and_get_id(int a, int b, const char *to, const char *filename, uint64_t size,
                                  uint32_t crc, file_offer_t *seen_by_b) {
     packet_header_t h;
