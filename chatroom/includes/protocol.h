@@ -56,4 +56,34 @@ int packet_recv(int sockfd, packet_header_t *hdr, char *payload);
 /* A valid user name is 2..PROTO_NAME_LEN-2 characters of [A-Za-z0-9_.-]. */
 bool proto_valid_name(const char *name);
 
+/* ---- client-side input parsing ---- */
+
+typedef enum {
+    INPUT_EMPTY, /* blank line, nothing to do */
+    INPUT_SEND,  /* send a packet built from the fields below */
+    INPUT_HELP,  /* show local help */
+    INPUT_EXIT,  /* leave the chat */
+    INPUT_ERROR  /* invalid input, show `error` */
+} input_action_t;
+
+typedef struct {
+    input_action_t action;
+    packet_type_t type;
+    char target[PROTO_NAME_LEN];
+    char text[PROTO_MAX_PAYLOAD + 1];
+    const char *error;
+} parsed_input_t;
+
+/*
+ * Maps one line typed by the user to an action:
+ *   text                  -> PKT_MSG_PUBLIC
+ *   /msg <user> <text>    -> PKT_MSG_PRIVATE
+ *   #<group> <text>       -> PKT_MSG_GROUP
+ *   /users                -> PKT_CMD_USERS
+ *   /group <name>         -> PKT_CMD_JOIN_GRP
+ *   /leave <name>         -> PKT_CMD_LEAVE_GRP
+ *   /help, /exit          -> INPUT_HELP, INPUT_EXIT
+ */
+input_action_t proto_parse_input(const char *line, parsed_input_t *out);
+
 #endif /* CHATROOM_PROTOCOL_H */

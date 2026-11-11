@@ -112,3 +112,90 @@ bool proto_valid_name(const char *name) {
     }
     return true;
 }
+
+/* Splits "word rest" in place: returns pointer to rest (trimmed) or "" if none. */
+static char *split_word(char *s) {
+    while (*s != '\0' && *s != ' ') {
+        s++;
+    }
+    if (*s == '\0') {
+        return s;
+    }
+    *s++ = '\0';
+    while (*s == ' ') {
+        s++;
+    }
+    return s;
+}
+
+static input_action_t fail(parsed_input_t *out, const char *msg) {
+    out->action = INPUT_ERROR;
+    out->error = msg;
+    return INPUT_ERROR;
+}
+
+static bool set_target(parsed_input_t *out, const char *t) {
+    if (t[0] == '\0' || strlen(t) > PROTO_NAME_LEN - 1) {
+        return false;
+    }
+    memcpy(out->target, t, strlen(t) + 1);
+    return true;
+}
+
+input_action_t proto_parse_input(const char *line, parsed_input_t *out) {
+    memset(out, 0, sizeof(*out));
+    out->action = INPUT_EMPTY;
+    if (line == NULL) {
+        return INPUT_EMPTY;
+    }
+    char buf[PROTO_MAX_PAYLOAD + 2];
+    size_t len = strcspn(line, "\r\n");
+    if (len > PROTO_MAX_PAYLOAD) {
+        return fail(out, "Message too long");
+    }
+    memcpy(buf, line, len);
+    buf[len] = '\0';
+    if (buf[0] == '\0') {
+        return INPUT_EMPTY;
+    }
+
+    if (buf[0] != '/' && buf[0] != '#') {
+        out->action = INPUT_SEND;
+        out->type = PKT_MSG_PUBLIC;
+        memcpy(out->text, buf, len + 1);
+        return INPUT_SEND;
+    }
+
+    char *rest = split_word(buf);
+    out->action = INPUT_SEND;
+    if (buf[0] == '#') {
+        out->type = PKT_MSG_GROUP;
+        if (!set_target(out, buf + 1) || rest[0] == '\0') {
+            return fail(out, "Usage: #<group> <text>");
+        }
+        memcpy(out->text, rest, strlen(rest) + 1);
+        return INPUT_SEND;
+    }
+    if (strcmp(buf, "/exit") == 0) {
+        out->action = INPUT_EXIT;
+    } else if (strcmp(buf, "/help") == 0) {
+        out->action = INPUT_HELP;
+    } else if (strcmp(buf, "/users") == 0) {
+        out->type = PKT_CMD_USERS;
+    } else if (strcmp(buf, "/msg") == 0) {
+        char *text = split_word(rest);
+        out->type = PKT_MSG_PRIVATE;
+        if (!set_target(out, rest) || text[0] == '\0') {
+            return fail(out, "Usage: /msg <username> <text>");
+        }
+        memcpy(out->text, text, strlen(text) + 1);
+    } else if (strcmp(buf, "/group") == 0 || strcmp(buf, "/leave") == 0) {
+        out->type = buf[1] == 'g' ? PKT_CMD_JOIN_GRP : PKT_CMD_LEAVE_GRP;
+        if (!set_target(out, rest)) {
+            return fail(out, buf[1] == 'g' ? "Usage: /group <name>" : "Usage: /leave <name>");
+        }
+    } else {
+        return fail(out, "Unknown command. Type /help");
+    }
+    return out->action;
+}
