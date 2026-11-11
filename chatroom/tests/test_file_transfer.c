@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200809L
 #include "fileshare.h"
 #include "test_util.h"
 
