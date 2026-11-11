@@ -142,8 +142,7 @@ static void *file_sender_thread(void *arg) {
     size_t len = 0;
     unsigned last_pct = 101;
     while (ok && !o->cancelled && !tx.done) {
-        ok = fs_sender_next(&tx, payload, &len) &&
-             client_send(PKT_FILE_CHUNK, o->recipient, payload, len);
+        ok = fs_sender_next(&tx, payload, &len) && client_send(PKT_FILE_CHUNK, o->recipient, payload, len);
         unsigned pct = o->size == 0 ? 100u : (unsigned)(tx.sent * 100u / o->size);
         if (ok && (pct != last_pct) && (pct % 5 == 0)) {
             last_pct = pct;
@@ -295,15 +294,13 @@ static void on_file_offer(const packet_header_t *hdr, const char *payload) {
     }
     char size_str[32];
     fs_format_size(slot->size, size_str, sizeof(size_str));
-    printf(
-        "* User '%s' wants to send '%s' (%s). Accept? [y/n]  (/fileaccept %u or /filereject %u)\n",
-        slot->sender, slot->filename, size_str, slot->id, slot->id);
+    printf("* User '%s' wants to send '%s' (%s). Accept? [y/n]  (/fileaccept %u or /filereject %u)\n",
+           slot->sender, slot->filename, size_str, slot->id, slot->id);
     pthread_mutex_unlock(&state_mu);
     fflush(stdout);
 }
 
-static void on_file_response(packet_type_t type, const char *payload, size_t len,
-                             const char *from) {
+static void on_file_response(packet_type_t type, const char *payload, size_t len, const char *from) {
     uint32_t id = 0;
     if (!fs_ctl_decode(payload, len, &id, NULL)) {
         return;
@@ -356,8 +353,7 @@ static void on_file_abort(const char *payload, size_t len) {
         }
         if (incoming[i].used && incoming[i].id == id) {
             incoming[i].used = false;
-            printf("* Offer of '%s' from %s was withdrawn\n", incoming[i].filename,
-                   incoming[i].sender);
+            printf("* Offer of '%s' from %s was withdrawn\n", incoming[i].filename, incoming[i].sender);
         }
     }
     pthread_mutex_unlock(&state_mu);
@@ -382,9 +378,8 @@ static void on_file_chunk(const char *payload, size_t len) {
     }
     fs_chunk_status_t st = fs_receiver_chunk(&r->rx, &v);
     if (st == FS_CHUNK_MORE) {
-        unsigned pct = r->rx.expected_size == 0
-                           ? 100u
-                           : (unsigned)(r->rx.received * 100u / r->rx.expected_size);
+        unsigned pct = r->rx.expected_size == 0 ? 100u
+                                                : (unsigned)(r->rx.received * 100u / r->rx.expected_size);
         if (pct != r->last_pct && pct % 5 == 0) {
             r->last_pct = pct;
             print_progress(r->filename, r->rx.received, r->rx.expected_size);
@@ -395,12 +390,8 @@ static void on_file_chunk(const char *payload, size_t len) {
                (unsigned long long)r->rx.expected_size);
         r->used = false;
     } else {
-        static const char *why[] = {"",
-                                    "",
-                                    "chunk out of sequence",
-                                    "invalid chunk size",
-                                    "checksum mismatch, file discarded",
-                                    "disk write error"};
+        static const char *why[] = {"", "", "chunk out of sequence", "invalid chunk size",
+                                    "checksum mismatch, file discarded", "disk write error"};
         printf("\n! Download of '%s' failed: %s\n", r->filename, why[st]);
         uint32_t id = r->rx.id;
         char sender[PROTO_NAME_LEN];
@@ -505,34 +496,34 @@ static void *receive_msg_handler(void *arg) {
             break;
         }
         switch (hdr.type) {
-        case PKT_MSG_PUBLIC:
-            printf("%s: %s\n", hdr.sender, payload);
-            break;
-        case PKT_MSG_PRIVATE:
-            printf("[private from %s] %s\n", hdr.sender, payload);
-            break;
-        case PKT_MSG_GROUP:
-            printf("[#%s] %s: %s\n", hdr.recipient_or_group, hdr.sender, payload);
-            break;
-        case PKT_SERVER_ERROR:
-            printf("! %s\n", payload);
-            break;
-        case PKT_FILE_OFFER:
-            on_file_offer(&hdr, payload);
-            break;
-        case PKT_FILE_ACCEPT:
-        case PKT_FILE_REJECT:
-            on_file_response((packet_type_t)hdr.type, payload, hdr.payload_len, hdr.sender);
-            break;
-        case PKT_FILE_CHUNK:
-            on_file_chunk(payload, hdr.payload_len);
-            break;
-        case PKT_FILE_ABORT:
-            on_file_abort(payload, hdr.payload_len);
-            break;
-        default:
-            printf("* %s\n", payload);
-            break;
+            case PKT_MSG_PUBLIC:
+                printf("%s: %s\n", hdr.sender, payload);
+                break;
+            case PKT_MSG_PRIVATE:
+                printf("[private from %s] %s\n", hdr.sender, payload);
+                break;
+            case PKT_MSG_GROUP:
+                printf("[#%s] %s: %s\n", hdr.recipient_or_group, hdr.sender, payload);
+                break;
+            case PKT_SERVER_ERROR:
+                printf("! %s\n", payload);
+                break;
+            case PKT_FILE_OFFER:
+                on_file_offer(&hdr, payload);
+                break;
+            case PKT_FILE_ACCEPT:
+            case PKT_FILE_REJECT:
+                on_file_response((packet_type_t)hdr.type, payload, hdr.payload_len, hdr.sender);
+                break;
+            case PKT_FILE_CHUNK:
+                on_file_chunk(payload, hdr.payload_len);
+                break;
+            case PKT_FILE_ABORT:
+                on_file_abort(payload, hdr.payload_len);
+                break;
+            default:
+                printf("* %s\n", payload);
+                break;
         }
         fflush(stdout);
     }

@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "fileshare.h"
 #include "logger.h"
 #include "protocol.h"
 
@@ -251,6 +252,173 @@ static void handle_group_msg(client_t *client, const char *group, const char *te
     pthread_mutex_unlock(&clients_mutex);
 }
 
+/* ---- file transfer relay (issue #14); all helpers need clients_mutex held ---- */
+
+static transfer_t *find_transfer_locked(uint32_t id) {
+    for (int i = 0; i < MAX_TRANSFERS; i++) {
+        if (transfers[i].used && transfers[i].id == id) {
+            return &transfers[i];
+        }
+    }
+    return NULL;
+}
+
+/* Tells both peers the transfer is dead (except `skip`, who triggered it) and frees the slot. */
+static void abort_transfer_locked(transfer_t *t, const char *reason, const char *skip) {
+    uint8_t ctl[PROTO_MAX_PAYLOAD];
+    size_t n = fs_ctl_encode(t->id, reason, ctl, sizeof(ctl));
+    const char *peers[2] = {t->from, t->to};
+    for (int i = 0; i < 2; i++) {
+        client_t *c = find_by_name_locked(peers[i]);
+        if (c != NULL && (skip == NULL || strcmp(skip, peers[i]) != 0)) {
+            send_raw_locked(c, PKT_FILE_ABORT, "server", c->name, ctl, n);
+        }
+    }
+    logger_log(LOG_LEVEL_WARN, "FILE", "Transfer %u '%s' %s -> %s aborted: %s", t->id, t->filename,
+               t->from, t->to, reason);
+    t->used = false;
+}
+
+static void abort_transfers_of_locked(const char *name) {
+    for (int i = 0; i < MAX_TRANSFERS; i++) {
+        if (transfers[i].used &&
+            (strcmp(transfers[i].from, name) == 0 || strcmp(transfers[i].to, name) == 0)) {
+            abort_transfer_locked(&transfers[i], "peer disconnected", name);
+        }
+    }
+}
+
+static void handle_file_offer(client_t *client, const packet_header_t *hdr, const char *payload) {
+    file_offer_t offer;
+    if (hdr->payload_len != sizeof(offer)) {
+        reply_error(client, "Malformed file offer");
+        return;
+    }
+    memcpy(&offer, payload, sizeof(offer));
+    fs_offer_to_host(&offer);
+    char safe[FS_FILENAME_LEN];
+    if (!fs_sanitize_filename(offer.filename, safe, sizeof(safe))) {
+        reply_error(client, "Invalid file name");
+        return;
+    }
+    if (offer.file_size > FS_MAX_FILE_SIZE) {
+        reply_error(client, "File too large (maximum is 50 MB)");
+        return;
+    }
+    pthread_mutex_lock(&clients_mutex);
+    client_t *dest = find_by_name_locked(hdr->recipient_or_group);
+    transfer_t *slot = NULL;
+    for (int i = 0; i < MAX_TRANSFERS && slot == NULL; i++) {
+        if (!transfers[i].used) {
+            slot = &transfers[i];
+        }
+    }
+    if (dest == NULL || dest == client) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       dest == NULL ? "Recipient not found" : "Cannot send a file to yourself");
+    } else if (slot == NULL) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "Too many transfers in progress");
+    } else {
+        memset(slot, 0, sizeof(*slot));
+        slot->used = true;
+        slot->id = ++transfer_counter;
+        snprintf(slot->from, sizeof(slot->from), "%s", client->name);
+        snprintf(slot->to, sizeof(slot->to), "%s", dest->name);
+        snprintf(slot->filename, sizeof(slot->filename), "%s", safe);
+        slot->size = offer.file_size;
+
+        file_offer_t relay;
+        memset(&relay, 0, sizeof(relay));
+        snprintf(relay.sender, sizeof(relay.sender), "%s", client->name);
+        snprintf(relay.recipient, sizeof(relay.recipient), "%s", dest->name);
+        snprintf(relay.filename, sizeof(relay.filename), "%s", safe);
+        relay.file_size = offer.file_size;
+        relay.checksum_crc32 = offer.checksum_crc32;
+        relay.transfer_id = slot->id;
+        fs_offer_to_net(&relay);
+        send_raw_locked(dest, PKT_FILE_OFFER, client->name, dest->name, &relay, sizeof(relay));
+        /* the echo tells the sender which transfer id the server assigned */
+        send_raw_locked(client, PKT_FILE_OFFER, client->name, dest->name, &relay, sizeof(relay));
+        logger_log(LOG_LEVEL_INFO, "FILE", "'%s' offered '%s' (%llu bytes) to '%s' [id %u]",
+                   client->name, safe, (unsigned long long)offer.file_size, dest->name, slot->id);
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_file_response(client_t *client, packet_type_t type, const char *payload,
+                                 size_t len) {
+    uint32_t id = 0;
+    pthread_mutex_lock(&clients_mutex);
+    transfer_t *t = fs_ctl_decode(payload, len, &id, NULL) ? find_transfer_locked(id) : NULL;
+    if (t == NULL || t->accepted || strcmp(t->to, client->name) != 0) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "No such pending transfer");
+    } else {
+        client_t *sender = find_by_name_locked(t->from);
+        uint8_t ctl[8];
+        size_t n = fs_ctl_encode(id, NULL, ctl, sizeof(ctl));
+        if (sender != NULL) {
+            send_raw_locked(sender, type, client->name, sender->name, ctl, n);
+        }
+        if (type == PKT_FILE_ACCEPT) {
+            t->accepted = true;
+            logger_log(LOG_LEVEL_INFO, "FILE", "'%s' accepted transfer %u ('%s' from '%s')",
+                       client->name, id, t->filename, t->from);
+        } else {
+            logger_log(LOG_LEVEL_INFO, "FILE", "'%s' rejected transfer %u ('%s' from '%s')",
+                       client->name, id, t->filename, t->from);
+            t->used = false;
+        }
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_file_chunk(client_t *client, const char *payload, size_t len) {
+    fs_chunk_view_t v;
+    pthread_mutex_lock(&clients_mutex);
+    if (!fs_chunk_decode(payload, len, &v)) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name, "Malformed file chunk");
+        pthread_mutex_unlock(&clients_mutex);
+        return;
+    }
+    transfer_t *t = find_transfer_locked(v.transfer_id);
+    if (t == NULL || !t->accepted || strcmp(t->from, client->name) != 0) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name,
+                       "No active transfer with that id");
+    } else if (v.chunk_index != t->next_index || t->relayed + v.chunk_size > t->size ||
+               v.is_last != (t->relayed + v.chunk_size == t->size)) {
+        abort_transfer_locked(t, "protocol violation (bad chunk sequence or size)", NULL);
+    } else {
+        client_t *dest = find_by_name_locked(t->to);
+        if (dest == NULL) {
+            abort_transfer_locked(t, "peer disconnected", client->name);
+        } else {
+            send_raw_locked(dest, PKT_FILE_CHUNK, client->name, dest->name, payload, len);
+            t->relayed += v.chunk_size;
+            t->next_index++;
+            if (v.is_last) {
+                logger_log(LOG_LEVEL_INFO, "FILE", "Transfer %u '%s' %s -> %s completed (%llu bytes)",
+                           t->id, t->filename, t->from, t->to, (unsigned long long)t->size);
+                t->used = false;
+            }
+        }
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+static void handle_file_abort(client_t *client, const char *payload, size_t len) {
+    uint32_t id = 0;
+    pthread_mutex_lock(&clients_mutex);
+    transfer_t *t = fs_ctl_decode(payload, len, &id, NULL) ? find_transfer_locked(id) : NULL;
+    if (t == NULL || (strcmp(t->from, client->name) != 0 && strcmp(t->to, client->name) != 0)) {
+        send_to_locked(client, PKT_SERVER_ERROR, "server", client->name, "No such transfer");
+    } else {
+        abort_transfer_locked(t, "cancelled by peer", client->name);
+    }
+    pthread_mutex_unlock(&clients_mutex);
+}
+
 /* Performs the handshake. Returns true when the client is registered under a unique name. */
 static bool do_handshake(client_t *client) {
     packet_header_t hdr;
@@ -320,6 +488,19 @@ static void *handle_client(void *arg) {
                 break;
             case PKT_CMD_USERS:
                 handle_users(client);
+                break;
+            case PKT_FILE_OFFER:
+                handle_file_offer(client, &hdr, payload);
+                break;
+            case PKT_FILE_ACCEPT:
+            case PKT_FILE_REJECT:
+                handle_file_response(client, (packet_type_t)hdr.type, payload, hdr.payload_len);
+                break;
+            case PKT_FILE_CHUNK:
+                handle_file_chunk(client, payload, hdr.payload_len);
+                break;
+            case PKT_FILE_ABORT:
+                handle_file_abort(client, payload, hdr.payload_len);
                 break;
             case PKT_CMD_JOIN_GRP:
                 handle_join_group(client, hdr.recipient_or_group);
