@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "logger.h"
 #include "protocol.h"
 
 #include <arpa/inet.h>
@@ -73,6 +74,12 @@ static void fanout_locked(packet_type_t type, const char *sender, const char *ta
     }
 }
 
+static void peer_ip(const client_t *c, char *buf, size_t len) {
+    if (inet_ntop(AF_INET, &c->address.sin_addr, buf, (socklen_t)len) == NULL) {
+        snprintf(buf, len, "?");
+    }
+}
+
 static void queue_client(client_t *cl) {
     pthread_mutex_lock(&clients_mutex);
     for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -139,6 +146,8 @@ static void handle_private(client_t *client, const char *to, const char *text) {
                        "Cannot send a private message to yourself");
     } else {
         send_to_locked(dest, PKT_MSG_PRIVATE, client->name, dest->name, text);
+        logger_log(LOG_LEVEL_INFO, "PRIV", "'%s' -> '%s': \"%s\"", client->name, dest->name,
+                   text);
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -177,6 +186,7 @@ static void handle_join_group(client_t *client, const char *group) {
         send_to_locked(client, PKT_SERVER_INFO, "server", client->name, out);
         snprintf(out, sizeof(out), "%s joined #%s", client->name, group);
         fanout_locked(PKT_SERVER_INFO, "server", group, out, client->uid, group);
+        logger_log(LOG_LEVEL_INFO, "GRP", "'%s' joined #%s", client->name, group);
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -202,6 +212,7 @@ static void handle_leave_group(client_t *client, const char *group) {
         send_to_locked(client, PKT_SERVER_INFO, "server", client->name, out);
         snprintf(out, sizeof(out), "%s left #%s", client->name, group);
         fanout_locked(PKT_SERVER_INFO, "server", group, out, client->uid, group);
+        logger_log(LOG_LEVEL_INFO, "GRP", "'%s' left #%s", client->name, group);
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -213,6 +224,7 @@ static void handle_group_msg(client_t *client, const char *group, const char *te
                        "Join the group first with /group <name>");
     } else {
         fanout_locked(PKT_MSG_GROUP, client->name, group, text, client->uid, group);
+        logger_log(LOG_LEVEL_INFO, "GRP", "'%s' -> #%s: \"%s\"", client->name, group, text);
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -224,13 +236,18 @@ static bool do_handshake(client_t *client) {
     if (packet_recv(client->sockfd, &hdr, payload) != 1 || hdr.type != PKT_HANDSHAKE) {
         return false;
     }
+    char ip[INET_ADDRSTRLEN];
+    peer_ip(client, ip, sizeof(ip));
     if (!proto_valid_name(hdr.sender)) {
+        logger_log(LOG_LEVEL_WARN, "AUTH", "Invalid username rejected from %s:%d", ip,
+                   ntohs(client->address.sin_port));
         reply_error(client, "Invalid name: use 2-30 characters of letters, digits, '_', '-', '.'");
         return false;
     }
     pthread_mutex_lock(&clients_mutex);
     if (find_by_name_locked(hdr.sender) != NULL) {
         send_to_locked(client, PKT_SERVER_ERROR, "server", "", "Name already in use");
+        logger_log(LOG_LEVEL_WARN, "AUTH", "Duplicate username rejected: '%s'", hdr.sender);
         pthread_mutex_unlock(&clients_mutex);
         return false;
     }
@@ -239,6 +256,8 @@ static bool do_handshake(client_t *client) {
     char out[PROTO_MAX_PAYLOAD];
     snprintf(out, sizeof(out), "%s has joined the chat", client->name);
     fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+    logger_log(LOG_LEVEL_INFO, "CONN", "Client '%s' connected from %s:%d", client->name, ip,
+               ntohs(client->address.sin_port));
     pthread_mutex_unlock(&clients_mutex);
     printf("%s\n", out);
     fflush(stdout);
@@ -260,33 +279,37 @@ static void *handle_client(void *arg) {
             break;
         }
         switch (hdr.type) {
-        case PKT_MSG_PUBLIC:
-            if (hdr.payload_len > 0) {
-                pthread_mutex_lock(&clients_mutex);
-                fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
-                pthread_mutex_unlock(&clients_mutex);
-                printf("%s: %s\n", client->name, payload);
-                fflush(stdout);
-            }
-            break;
-        case PKT_MSG_PRIVATE:
-            handle_private(client, hdr.recipient_or_group, payload);
-            break;
-        case PKT_MSG_GROUP:
-            handle_group_msg(client, hdr.recipient_or_group, payload);
-            break;
-        case PKT_CMD_USERS:
-            handle_users(client);
-            break;
-        case PKT_CMD_JOIN_GRP:
-            handle_join_group(client, hdr.recipient_or_group);
-            break;
-        case PKT_CMD_LEAVE_GRP:
-            handle_leave_group(client, hdr.recipient_or_group);
-            break;
-        default:
-            reply_error(client, "Unsupported packet type");
-            break;
+            case PKT_MSG_PUBLIC:
+                if (hdr.payload_len > 0) {
+                    pthread_mutex_lock(&clients_mutex);
+                    fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
+                    logger_log(LOG_LEVEL_INFO, "MSG", "'%s' -> ALL: \"%s\"", client->name,
+                               payload);
+                    pthread_mutex_unlock(&clients_mutex);
+                    printf("%s: %s\n", client->name, payload);
+                    fflush(stdout);
+                }
+                break;
+            case PKT_MSG_PRIVATE:
+                handle_private(client, hdr.recipient_or_group, payload);
+                break;
+            case PKT_MSG_GROUP:
+                handle_group_msg(client, hdr.recipient_or_group, payload);
+                break;
+            case PKT_CMD_USERS:
+                handle_users(client);
+                break;
+            case PKT_CMD_JOIN_GRP:
+                handle_join_group(client, hdr.recipient_or_group);
+                break;
+            case PKT_CMD_LEAVE_GRP:
+                handle_leave_group(client, hdr.recipient_or_group);
+                break;
+            default:
+                logger_log(LOG_LEVEL_WARN, "PROTO", "'%s' sent unsupported packet type %u",
+                           client->name, (unsigned)hdr.type);
+                reply_error(client, "Unsupported packet type");
+                break;
         }
     }
 
@@ -296,6 +319,7 @@ static void *handle_client(void *arg) {
         snprintf(out, sizeof(out), "%s has left the chat", client->name);
         pthread_mutex_lock(&clients_mutex);
         fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+        logger_log(LOG_LEVEL_INFO, "DISC", "Client '%s' disconnected", client->name);
         pthread_mutex_unlock(&clients_mutex);
         printf("%s\n", out);
         fflush(stdout);
@@ -307,13 +331,19 @@ static void *handle_client(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <IP> <Port>\n", argv[0]);
+    if (argc != 3 && argc != 4) {
+        fprintf(stderr, "Usage: %s <IP> <Port> [logfile]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
     char *ip = argv[1];
     int port = atoi(argv[2]);
+    const char *log_path = (argc == 4) ? argv[3] : "server.log";
+
+    if (!logger_init(log_path)) {
+        fprintf(stderr, "Error: cannot open log file '%s'\n", log_path);
+        return EXIT_FAILURE;
+    }
 
     int listefd = socket(AF_INET, SOCK_STREAM, 0);
     if (listefd < 0) {
@@ -352,6 +382,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    logger_log(LOG_LEVEL_INFO, "SERV", "Server started on %s:%d (log: %s)", ip, port, log_path);
     printf("Server listening on %s:%d\n", ip, port);
     fflush(stdout);
 
@@ -401,5 +432,7 @@ int main(int argc, char *argv[]) {
     }
 
     close(listefd);
+    logger_log(LOG_LEVEL_INFO, "SERV", "Server stopped");
+    logger_close();
     return EXIT_SUCCESS;
 }
