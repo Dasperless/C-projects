@@ -86,7 +86,7 @@ int packet_recv(int sockfd, packet_header_t *hdr, char *payload) {
     hdr->sender[PROTO_NAME_LEN - 1] = '\0';
     hdr->recipient_or_group[PROTO_NAME_LEN - 1] = '\0';
     if (hdr->payload_len > PROTO_MAX_PAYLOAD || hdr->type < PKT_HANDSHAKE ||
-        hdr->type > PKT_SERVER_ERROR) {
+        hdr->type > PKT_TYPE_MAX) {
         return -1;
     }
     if (hdr->payload_len > 0 && recv_all(sockfd, payload, hdr->payload_len) <= 0) {
@@ -189,6 +189,19 @@ input_action_t proto_parse_input(const char *line, parsed_input_t *out) {
             return fail(out, "Usage: /msg <username> <text>");
         }
         memcpy(out->text, text, strlen(text) + 1);
+    } else if (strcmp(buf, "/sendfile") == 0) {
+        char *path = split_word(rest);
+        out->action = INPUT_SENDFILE;
+        if (!set_target(out, rest) || path[0] == '\0') {
+            return fail(out, "Usage: /sendfile <username> <path>");
+        }
+        memcpy(out->text, path, strlen(path) + 1);
+    } else if (strcmp(buf, "/fileaccept") == 0 || strcmp(buf, "/filereject") == 0) {
+        out->action = buf[5] == 'a' ? INPUT_FILE_ACCEPT : INPUT_FILE_REJECT;
+        if (rest[0] == '\0') {
+            return fail(out, "Usage: /fileaccept <id> or /filereject <id>");
+        }
+        memcpy(out->text, rest, strlen(rest) + 1);
     } else if (strcmp(buf, "/group") == 0 || strcmp(buf, "/leave") == 0) {
         out->type = buf[1] == 'g' ? PKT_CMD_JOIN_GRP : PKT_CMD_LEAVE_GRP;
         if (!set_target(out, rest)) {

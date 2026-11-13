@@ -14,7 +14,8 @@
  */
 
 #define PROTO_NAME_LEN 32
-#define PROTO_MAX_PAYLOAD 2048
+/* Large enough for one 4 KB file chunk plus its 11-byte chunk header (issue #14). */
+#define PROTO_MAX_PAYLOAD 4160
 
 typedef enum {
     PKT_HANDSHAKE = 1,
@@ -26,8 +27,15 @@ typedef enum {
     PKT_CMD_LEAVE_GRP = 7,
     PKT_DISCONNECT = 8,
     PKT_SERVER_INFO = 9,
-    PKT_SERVER_ERROR = 10
+    PKT_SERVER_ERROR = 10,
+    PKT_FILE_OFFER = 11,
+    PKT_FILE_ACCEPT = 12,
+    PKT_FILE_REJECT = 13,
+    PKT_FILE_CHUNK = 14,
+    PKT_FILE_ABORT = 15
 } packet_type_t;
+
+#define PKT_TYPE_MAX PKT_FILE_ABORT
 
 typedef struct __attribute__((packed)) {
     uint16_t type;
@@ -59,11 +67,14 @@ bool proto_valid_name(const char *name);
 /* ---- client-side input parsing ---- */
 
 typedef enum {
-    INPUT_EMPTY, /* blank line, nothing to do */
-    INPUT_SEND,  /* send a packet built from the fields below */
-    INPUT_HELP,  /* show local help */
-    INPUT_EXIT,  /* leave the chat */
-    INPUT_ERROR  /* invalid input, show `error` */
+    INPUT_EMPTY,       /* blank line, nothing to do */
+    INPUT_SEND,        /* send a packet built from the fields below */
+    INPUT_HELP,        /* show local help */
+    INPUT_EXIT,        /* leave the chat */
+    INPUT_SENDFILE,    /* target = recipient, text = file path */
+    INPUT_FILE_ACCEPT, /* text = transfer id */
+    INPUT_FILE_REJECT, /* text = transfer id */
+    INPUT_ERROR        /* invalid input, show `error` */
 } input_action_t;
 
 typedef struct {
@@ -83,6 +94,8 @@ typedef struct {
  *   /group <name>         -> PKT_CMD_JOIN_GRP
  *   /leave <name>         -> PKT_CMD_LEAVE_GRP
  *   /help, /exit          -> INPUT_HELP, INPUT_EXIT
+ *   /sendfile <user> <path>, /fileaccept <id>, /filereject <id>
+ *                         -> INPUT_SENDFILE, INPUT_FILE_ACCEPT, INPUT_FILE_REJECT
  */
 input_action_t proto_parse_input(const char *line, parsed_input_t *out);
 
