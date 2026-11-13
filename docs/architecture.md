@@ -1,12 +1,12 @@
 # Architecture & Design Principles
 
-This document explains the architectural boundaries, memory management model, concurrency invariants, and cross-platform portability patterns used across `C-projects`.
+This document explains the architectural boundaries, memory management model, concurrency invariants, and cross-platform portability patterns used across `NetStruct`.
 
 ---
 
 ## 1. High-Level Module Topology
 
-`C-projects` is partitioned into two top-level subsystems with **zero cross-dependencies**:
+`NetStruct` is partitioned into two top-level subsystems with **zero cross-dependencies**:
 
 1. **`chatroom/`**: A multi-threaded POSIX TCP client/server system composed of three reusable static libraries (`chatroom_protocol`, `chatroom_logger`, `chatroom_fileshare`) and two executables (`chatroom_server`, `chatroom_client`).
 2. **`structures/`**: Seven standalone, single-responsibility static libraries implementing fundamental data structures (`singly_linked_list`, `doubly_linked_list`, `vector`, `stack`, `queue`, `bst`, `hash_table`).
@@ -61,7 +61,7 @@ flowchart LR
 
 ## 2. Memory Ownership & Lifetime Model
 
-Every module in `C-projects` follows deterministic, RAII-inspired C11 resource management conventions:
+Every module in `NetStruct` follows deterministic, RAII-inspired C11 resource management conventions:
 
 ### Constructor / Destructor Symmetry
 
@@ -122,7 +122,7 @@ sequenceDiagram
 
 ## 4. Cross-Platform Portability (Linux & macOS)
 
-`C-projects` runs identically on Linux (`glibc`) and macOS (`Darwin` / BSD libc). Key portability mechanisms built into the codebase:
+`NetStruct` runs identically on Linux (`glibc`) and macOS (`Darwin` / BSD libc). Key portability mechanisms built into the codebase:
 
 1. **Waking `accept()` Across OS Kernels**:
    On Linux, calling `shutdown(listen_fd, SHUT_RDWR)` wakes a thread blocked in `accept()`. On macOS (BSD sockets), `shutdown()` on a listening socket returns `ENOTCONN` and does **not** interrupt `accept()`. Therefore, `request_shutdown()` in [`server.c`](../chatroom/server.c) performs **both** `shutdown(listen_fd, SHUT_RDWR)` and `pthread_kill(main_tid, SIGTERM)` so `accept()` is reliably interrupted with `EINTR` on both kernels.

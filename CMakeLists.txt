@@ -7,7 +7,7 @@ if(current_bin_dir STREQUAL current_src_dir)
     message(FATAL_ERROR "In-source builds are not permitted. Please use a separate build directory (e.g. cmake -B build).")
 endif()
 
-project(CProjects VERSION 1.0.0 LANGUAGES C)
+project(NetStruct VERSION 1.0.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

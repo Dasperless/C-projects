@@ -192,7 +192,7 @@ shutdown                               # Notifies clients, joins worker threads,
 cmake_minimum_required(VERSION 3.20)
 project(MyApplication LANGUAGES C CXX)
 
-add_subdirectory(C-projects)
+add_subdirectory(NetStruct)  # path to your clone of this repository
 
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE

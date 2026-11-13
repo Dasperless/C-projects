@@ -1,6 +1,6 @@
-# C-projects Documentation
+# NetStruct Documentation
 
-Welcome to the comprehensive technical documentation for **`C-projects`** — a collection of systems programming modules and foundational data structures written in strict C11 (`-std=c11`, `-Werror`) with C++ interoperability, multi-threaded POSIX networking, and continuous verification under AddressSanitizer (`ASan`) and UndefinedBehaviorSanitizer (`UBSan`).
+Welcome to the comprehensive technical documentation for **`NetStruct`** — a collection of systems programming modules and foundational data structures written in strict C11 (`-std=c11`, `-Werror`) with C++ interoperability, multi-threaded POSIX networking, and continuous verification under AddressSanitizer (`ASan`) and UndefinedBehaviorSanitizer (`UBSan`).
 
 ---
 
