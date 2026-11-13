@@ -1,4 +1,6 @@
-# C-projects
+# NetStruct
+
+> Networked chat system and core data structures in strict C11.
 
 [![CI](https://github.com/Dasperless/C-projects/actions/workflows/ci.yml/badge.svg)](https://github.com/Dasperless/C-projects/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

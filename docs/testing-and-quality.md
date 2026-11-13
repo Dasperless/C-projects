@@ -1,6 +1,6 @@
 # Testing, Sanitizers & Quality Gates
 
-`C-projects` relies on automated tests, dynamic sanitizers, code formatting, and static analysis to verify correctness across Linux and macOS.
+`NetStruct` relies on automated tests, dynamic sanitizers, code formatting, and static analysis to verify correctness across Linux and macOS.
 
 ---
 
