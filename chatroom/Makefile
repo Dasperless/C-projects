@@ -4,7 +4,7 @@ LDFLAGS ?= -pthread
 
 SERVER_BIN = server
 CLIENT_BIN = client
-TEST_BINS = test_fileshare test_logger test_protocol test_chat_features test_chat_logging test_file_transfer test_concurrency
+TEST_BINS = test_fileshare test_logger test_protocol test_chat_features test_chat_logging test_file_transfer test_admin_console test_concurrency
 
 .PHONY: all clean test
 
@@ -31,6 +31,9 @@ test_chat_logging: tests/test_chat_logging.c protocol.c
 test_file_transfer: tests/test_file_transfer.c protocol.c fileshare.c
 	$(CC) $(CFLAGS) -Itests -o $@ $^ $(LDFLAGS)
 
+test_admin_console: tests/test_admin_console.c protocol.c
+	$(CC) $(CFLAGS) -Itests -o $@ $^ $(LDFLAGS)
+
 test_concurrency: tests/test_concurrency.c protocol.c
 	$(CC) $(CFLAGS) -Itests -o $@ $^ $(LDFLAGS)
 
@@ -41,6 +44,7 @@ test: all $(TEST_BINS)
 	./test_chat_features ./$(SERVER_BIN)
 	./test_chat_logging ./$(SERVER_BIN)
 	./test_file_transfer ./$(SERVER_BIN)
+	./test_admin_console ./$(SERVER_BIN)
 	./test_concurrency ./$(SERVER_BIN)
 
 clean:
