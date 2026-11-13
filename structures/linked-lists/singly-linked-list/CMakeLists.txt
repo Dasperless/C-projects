@@ -1,4 +1,4 @@
-add_library(singly_linked_list STATIC linked_list.c)
+add_library(singly_linked_list STATIC linked_list.c list_container.c)
 target_include_directories(singly_linked_list PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(singly_linked_list PRIVATE project_warnings)
 
