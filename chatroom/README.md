@@ -1,24 +1,86 @@
-Como vimos en clase, en esta Tarea haremos uso de conceptos básicos de comunicación entre procesos para crear una sencilla aplicación de chat en modo texto, a nivel de terminal, pero que nos permitiría incluso comunicar terminales en distintas computadoras que estén en una misma red.
+# Chatroom
 
-Para esta Tarea se puede hacer uso del material de los capítulos 12 al 15 del libro: "Beginning Linux Programming, Fourth Edition.pdf"  que fueron asignados como Lecturas previas en este curso. El capítulo 11 también puede ser útil si se desea implementar señales como parte de la comunicación entre procesos.
+A multi-threaded TCP chat server and client in C11 with length-prefixed framing, private and group messaging, chunked binary file transfer, a persistent audit logger, and an interactive server console.
 
-Con estas herramientas vamos a proceder a implementar un sistema básico y sencillo de Chat desde la Terminal de Linux.
+## Architecture
 
-Todo sistema de Chat tiene dos componentes importantes: un servidor que tiene el control de los usuarios conectados al sistema, y un programa cliente usado en múltiples instancias por múltiples usuarios para intercambiar mensajes.
+```mermaid
+flowchart TD
+    subgraph Server["chatroom_server"]
+        Accept["Main thread: accept()"]
+        Admin["admin_console_thread (stdin)"]
+        Workers["Client worker threads (1 per client, joined on exit)"]
+        State["clients[] + transfers[] + metrics (guarded by clients_mutex)"]
+        Logger["logger_log() -> server.log (guarded by log_mutex)"]
+    end
+    ClientA["chatroom_client A"] <-->|"framed TCP packets"| Workers
+    ClientB["chatroom_client B"] <-->|"framed TCP packets"| Workers
+    Accept --> Workers
+    Workers --> State
+    Admin --> State
+    Workers --> Logger
+    Admin --> Logger
+```
 
-La interfaz será sencilla, usaremos las IP de las máquinas para identificar a los programas clientes del sistema y un nombre de usuario que será solicitado por el programa cliente al iniciar la sesión en el programa cliente ante el servidor.
+### Wire protocol (`includes/protocol.h`, `protocol.c`)
 
-Se debe definir un protocolo básico de comunicación entre el cliente y el servidor de forma tal que el cliente puede hacer consultas al servidor, tales como : cantidad de usuarios conectados, lista de nombres de usuarios conectados, iniciar conversación con un cliente, enviar mensaje de texto, enviar archivo, etc. Además el cliente podrá enviar un mensaje a un usuario particular indicando en la sesión cliente el nombre del usuario destinatario del mensaje y el mensaje o mensajes a enviar.. hasta que termine la sesión con dicho usuario y regrese al menú de opciones para hacer consultas al servidor o bien conversar con otro usuario en el sistema. 
+Every message on the wire is a 68-byte packed header (network byte order) followed by `payload_len` bytes (`0..4160`):
 
-Desde el programa cliente el usuario podrá crear una conversación grupal. Para comunicarse con varios usuarios en el sistema al mismo tiempo. Según lo comentado en clases, hay varias formas de implementar estos grupos, teniendo como referencia otras aplicaciones tales como Telegram, WhatsApp o Discord. 
+```c
+typedef struct __attribute__((packed)) {
+    uint16_t type;                        /* packet_type_t */
+    uint16_t payload_len;                 /* 0 .. PROTO_MAX_PAYLOAD (4160) */
+    char sender[32];                      /* stamped by the server from the handshake */
+    char recipient_or_group[32];          /* target user or #group */
+} packet_header_t;
+```
 
-Como desarrolladores deberán diseñar y definir varios aspectos del programa final. Desde la interfaz en modo texto, el protocolo de los mensajes y los mensajes en sí entre los procesos, la forma de conformación de los grupos y si la comunicación será toda centralizada vía el servidor o bien si será directa entre procesos. 
+`send_all()` and `recv_all()` loop across short reads/writes and `EINTR` so TCP segment fragmentation or coalescing never tears a frame. Each outbound frame is assembled in a stack buffer and written in one `send_all()` under `clients_mutex` (server) or `send_mu` (client), preventing interleaved bytes when multiple threads write to the same socket.
 
-Deberá documentar todas estas definiciones y diseños realizados, debe brindar diagramas que expliquen estos funcionamientos y la forma de interacción y comunicación entre todas las partes. Deberá también mostrar las estructuras de datos desarrolladas y el código. 
+| Type | Value | Direction | Purpose |
+|---|---:|---|---|
+| `PKT_HANDSHAKE` | 1 | C -> S | Register username (`[A-Za-z0-9_.-]{2,30}`, unique) |
+| `PKT_MSG_PUBLIC` | 2 | C <-> S | Broadcast to all other connected users |
+| `PKT_MSG_PRIVATE` | 3 | C <-> S | 1-on-1 message to `recipient_or_group` |
+| `PKT_MSG_GROUP` | 4 | C <-> S | Channel message to members of `#<group>` |
+| `PKT_CMD_USERS` | 5 | C -> S | Request the list of connected users |
+| `PKT_CMD_JOIN_GRP` / `LEAVE_GRP` | 6 / 7 | C -> S | Join or leave a group channel |
+| `PKT_DISCONNECT` | 8 | C -> S | Clean departure |
+| `PKT_SERVER_INFO` / `ERROR` | 9 / 10 | S -> C | Server notices and errors |
+| `PKT_FILE_OFFER` .. `PKT_FILE_ABORT` | 11..15 | C <-> S | Chunked binary file transfer |
 
-Los programas pueden usar hilos (threads) o forks para poder llevar el control de las diversas actividades asíncronas: envío y recepción de mensajes, despliegues de opciones, etc. Recuerde usar semáforos para sincronizar los procesos y evitar inconssitencias de datos.
+### File transfer (`includes/fileshare.h`, `fileshare.c`)
 
-El programa servidor, además, tendrá un menú de opciones que permita listar los usuarios conectados (IP y nombre), así como mostrar el tráfico de mensajes en modo “monitor”. Debe mostrar información estadística de uso, como el número de clientes, cantidad de mensajes transmitido, cantidad de bytes transmitidos, etc.
+1. `/sendfile <user> <path>` computes the file size (max 50 MB) and IEEE CRC-32, sanitizes the basename (`../../etc/passwd` -> `passwd`), and sends a 144-byte `file_offer_t`.
+2. The server validates the offer, assigns a `transfer_id`, forwards the offer to the recipient, and echoes it to the sender.
+3. The recipient types `y`/`n` (or `/fileaccept <id>` / `/filereject <id>`). Accepting atomically reserves `./downloads/<name>.part` (`O_CREAT | O_EXCL`, picking `<name>.1`, `<name>.2`, ... if the destination already exists).
+4. A detached sender thread streams 4096-byte chunks (`PKT_FILE_CHUNK`). Both ends render a `[=====>    ] 50%` progress bar.
+5. On the last chunk the receiver verifies the running CRC-32 against the offer and renames `.part` into place; any mismatch or disconnect deletes the partial file and sends `PKT_FILE_ABORT`.
 
-El servidor deberá llevar un registro tipo LOG o bitácora de todas las actividades realizadas: llegada de usuarios, desconexión, mensajes transmitidos entre un par de usuarios, etc. Este archivo no debe borrarse al finalizar la sesión. El contenido nuevo se agragará siempre al final del archivo.
+### Audit logger (`includes/logger.h`, `logger.c`)
 
+`logger_init(path)` opens the log file with `"a"`. `logger_log()` formats an ISO-8601 UTC timestamp, escapes control characters (`\n` -> `\n`) so user input cannot forge extra log entries, writes the line under `log_mutex`, and flushes immediately:
+
+```text
+[2026-11-11T14:20:05Z] [INFO] [CONN] Client 'alice' connected from 127.0.0.1:54321
+[2026-11-11T14:20:07Z] [INFO] [PRIV] 'alice' -> 'bob': "Secret meeting"
+```
+
+### Administrative console (`server.c`)
+
+| Command | Effect |
+|---|---|
+| `help` | List console commands |
+| `users` | Table of active clients (UID, username, IP, port, connected duration) |
+| `stats` | Uptime, active/peak clients, lifetime connections, message & byte counters |
+| `monitor [on\|off]` | Show or toggle live traffic echoing on server stdout |
+| `kick <username>` | Send an error notice to the user, close their socket, notify the room |
+| `broadcast <msg>` | Send `[ADMIN] <msg>` to every connected client |
+| `shutdown` / `quit` (or `SIGINT`/`SIGTERM`) | Broadcast `SERVER_SHUTDOWN`, close client sockets, join worker threads, flush the log, exit 0 |
+
+## Building and testing
+
+```bash
+cmake -B build -DENABLE_ASAN=ON -DENABLE_UBSAN=ON && cmake --build build
+ctest --test-dir build --output-on-failure -R "logger|fileshare|protocol|chat|file_transfer|admin|concurrency"
+```
