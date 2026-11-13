@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "protocol.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -11,14 +12,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define MAX_BUFFER 2048
-#define NAME_LEN 32
-
 static volatile sig_atomic_t flag = 0;
-static char name[NAME_LEN];
 static int sockfd = 0;
-static pthread_t send_thread;
-static pthread_t recv_thread;
+static char name[PROTO_NAME_LEN];
 
 static void str_trim_lf(char *arr, int length) {
     for (int i = 0; i < length; i++) {
@@ -27,6 +23,19 @@ static void str_trim_lf(char *arr, int length) {
             break;
         }
     }
+}
+
+static void print_help(void) {
+    printf("Commands:\n"
+           "  <text>              send to everyone\n"
+           "  /msg <user> <text>  private message\n"
+           "  /group <name>       join a group channel\n"
+           "  #<name> <text>      message a group you joined\n"
+           "  /leave <name>       leave a group\n"
+           "  /users              list connected users\n"
+           "  /help               show this help\n"
+           "  /exit               disconnect\n");
+    fflush(stdout);
 }
 
 static void catch_sigint(int sig) {
@@ -39,64 +48,65 @@ static void catch_sigint(int sig) {
 
 static void *send_msg_handler(void *arg) {
     (void)arg;
-    char message[MAX_BUFFER];
-    char buffer[MAX_BUFFER + NAME_LEN];
+    char line[PROTO_MAX_PAYLOAD + 64];
 
     while (!flag) {
-        memset(message, 0, sizeof(message));
-        memset(buffer, 0, sizeof(buffer));
-
-        if (fgets(message, (int)sizeof(message), stdin) == NULL) {
-            flag = 1;
+        if (fgets(line, (int)sizeof(line), stdin) == NULL) {
             break;
         }
-
-        str_trim_lf(message, (int)strlen(message));
-
-        if (strcmp(message, "/exit") == 0) {
-            flag = 1;
+        parsed_input_t in;
+        proto_parse_input(line, &in);
+        if (in.action == INPUT_EXIT) {
             break;
         }
-
-        if (strlen(message) > 0) {
-            snprintf(buffer, sizeof(buffer), "%s\n", message);
-            ssize_t sent = send(sockfd, buffer, strlen(buffer), 0);
-            if (sent <= 0) {
-                flag = 1;
+        if (in.action == INPUT_HELP) {
+            print_help();
+        } else if (in.action == INPUT_ERROR) {
+            printf("! %s\n", in.error);
+            fflush(stdout);
+        } else if (in.action == INPUT_SEND) {
+            if (!packet_send(sockfd, in.type, name, in.target, in.text, strlen(in.text))) {
                 break;
             }
         }
     }
 
-    /* Signal receive thread and socket */
-    if (sockfd > 0) {
-        shutdown(sockfd, SHUT_RDWR);
-    }
+    flag = 1;
+    (void)packet_send(sockfd, PKT_DISCONNECT, name, NULL, NULL, 0);
+    shutdown(sockfd, SHUT_RDWR);
     return NULL;
 }
 
 static void *receive_msg_handler(void *arg) {
     (void)arg;
-    char message[MAX_BUFFER];
+    packet_header_t hdr;
+    char payload[PROTO_MAX_PAYLOAD + 1];
 
     while (!flag) {
-        memset(message, 0, sizeof(message));
-        ssize_t receive = recv(sockfd, message, sizeof(message) - 1, 0);
-        if (receive > 0) {
-            message[receive] = '\0';
-            printf("%s", message);
-            fflush(stdout);
-        } else if (receive == 0) {
-            /* Server disconnected */
-            flag = 1;
-            break;
-        } else {
-            /* Error or socket closed by shutdown */
-            flag = 1;
+        if (packet_recv(sockfd, &hdr, payload) != 1) {
             break;
         }
+        switch (hdr.type) {
+        case PKT_MSG_PUBLIC:
+            printf("%s: %s\n", hdr.sender, payload);
+            break;
+        case PKT_MSG_PRIVATE:
+            printf("[private from %s] %s\n", hdr.sender, payload);
+            break;
+        case PKT_MSG_GROUP:
+            printf("[#%s] %s: %s\n", hdr.recipient_or_group, hdr.sender, payload);
+            break;
+        case PKT_SERVER_ERROR:
+            printf("! %s\n", payload);
+            break;
+        default:
+            printf("* %s\n", payload);
+            break;
+        }
+        fflush(stdout);
     }
 
+    flag = 1;
     return NULL;
 }
 
@@ -114,6 +124,7 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = catch_sigint;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
+    signal(SIGPIPE, SIG_IGN);
 
     printf("Enter your name: ");
     fflush(stdout);
@@ -122,8 +133,10 @@ int main(int argc, char *argv[]) {
     }
     str_trim_lf(name, (int)strlen(name));
 
-    while (strlen(name) >= (NAME_LEN - 1) || strlen(name) < 2) {
-        printf("Name must be between 2 and %d characters.\nEnter your name: ", NAME_LEN - 2);
+    while (!proto_valid_name(name)) {
+        printf(
+            "Name must be 2-%d characters of letters, digits, '_', '-' or '.'.\nEnter your name: ",
+            PROTO_NAME_LEN - 2);
         fflush(stdout);
         if (fgets(name, (int)sizeof(name), stdin) == NULL) {
             return EXIT_FAILURE;
@@ -140,25 +153,20 @@ int main(int argc, char *argv[]) {
     }
     server_addr.sin_port = htons((uint16_t)port);
 
-    /* Socket settings - fix variable shadowing of sockfd */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         perror("Error: socket creation failed");
         return EXIT_FAILURE;
     }
 
-    /* Connect to server */
-    int err = connect(sockfd, (struct sockaddr *)&server_addr, (socklen_t)sizeof(server_addr));
-    if (err == -1) {
+    if (connect(sockfd, (struct sockaddr *)&server_addr, (socklen_t)sizeof(server_addr)) == -1) {
         perror("Error: connect to server failed");
         close(sockfd);
         return EXIT_FAILURE;
     }
 
-    /* Send username */
-    ssize_t sent = send(sockfd, name, strlen(name), 0);
-    if (sent <= 0) {
-        perror("Error: failed to send username");
+    if (!packet_send(sockfd, PKT_HANDSHAKE, name, NULL, NULL, 0)) {
+        perror("Error: failed to send handshake");
         close(sockfd);
         return EXIT_FAILURE;
     }
@@ -166,7 +174,8 @@ int main(int argc, char *argv[]) {
     printf("=== Connected to server ===\n");
     fflush(stdout);
 
-    /* Create threads */
+    pthread_t recv_thread;
+    pthread_t send_thread;
     if (pthread_create(&recv_thread, NULL, receive_msg_handler, NULL) != 0) {
         perror("Error: pthread_create for receive failed");
         close(sockfd);
@@ -176,15 +185,14 @@ int main(int argc, char *argv[]) {
     if (pthread_create(&send_thread, NULL, send_msg_handler, NULL) != 0) {
         perror("Error: pthread_create for send failed");
         flag = 1;
+        shutdown(sockfd, SHUT_RDWR);
         pthread_join(recv_thread, NULL);
         close(sockfd);
         return EXIT_FAILURE;
     }
+    /* The send thread may be blocked in fgets() if the server hung up; do not wait for it. */
+    pthread_detach(send_thread);
 
-    /* Clean thread synchronization: eliminate CPU spin-loop */
-    pthread_join(send_thread, NULL);
-
-    /* If send_thread ended first, ensure recv_thread also joins */
     pthread_join(recv_thread, NULL);
 
     printf("\nDisconnected from server.\n");
