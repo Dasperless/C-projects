@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct Node {
     int data;
     struct Node *next;
@@ -60,5 +64,9 @@ void append(int data, node **head);
 int min(node *head);
 int max(node *head);
 void free_list(node **head);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* NODE_H */

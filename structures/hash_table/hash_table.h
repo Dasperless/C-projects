@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* String-keyed hash table (separate chaining, DJB2) that doubles its bucket
  * array and rehashes when the load factor reaches HT_MAX_LOAD (0.75). */
 #define HT_MAX_LOAD 0.75f
@@ -27,5 +31,9 @@ float ht_load_factor(const HashTable *ht);
 
 /* DJB2 hash, exposed so tests can construct colliding keys. */
 unsigned long ht_hash(const char *key);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HASH_TABLE_H */

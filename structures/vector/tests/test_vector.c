@@ -2,6 +2,7 @@
 #include "vector.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,6 +23,7 @@ static void test_create_and_destroy(void) {
 
     /* Safe destroy on NULL */
     vector_destroy(NULL);
+    assert(vector_create(SIZE_MAX) == NULL);
     printf("PASS: test_create_and_destroy\n");
 }
 

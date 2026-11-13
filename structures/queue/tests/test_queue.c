@@ -2,6 +2,7 @@
 #include "queue.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -35,6 +36,7 @@ static void test_queue_basic(void) {
 
     queue_destroy(q);
     queue_destroy(NULL);
+    assert(queue_create(SIZE_MAX) == NULL);
     printf("PASS: test_queue_basic\n");
 }
 

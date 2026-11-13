@@ -11,6 +11,13 @@ Systems programming and data-structure implementations in strict C11 (`-Wall -We
 .
 ├── CMakeLists.txt
 ├── Makefile
+├── docs/                           # Comprehensive technical & API documentation
+│   ├── README.md                   # Documentation index (Diátaxis overview)
+│   ├── getting-started.md          # Build, CTest, chatroom walkthrough, C/C++ linking
+│   ├── architecture.md             # Module topology, memory ownership, concurrency
+│   ├── chatroom-protocol.md        # 68B wire framing, 4 KB file transfer, audit log
+│   ├── data-structures.md          # C/C++ API reference & complexity analysis
+│   └── testing-and-quality.md      # CTest catalog, ASan/UBSan, clang-format, cppcheck
 ├── chatroom/                       # Multi-threaded TCP chat server and client
 │   ├── includes/                   # protocol.h, logger.h, fileshare.h
 │   ├── server.c / client.c         # Server, admin console, client CLI
@@ -80,7 +87,7 @@ Or through the convenience `Makefile` wrapper (`make build`, `make asan`, `make 
 ./build/bin/chatroom_client 127.0.0.1 8888
 ```
 
-See [`chatroom/README.md`](chatroom/README.md) for the wire protocol, client commands (`/msg`, `/group`, `/users`, `/sendfile`), and server admin console (`users`, `stats`, `monitor`, `kick`, `broadcast`, `quit`), and [`structures/README.md`](structures/README.md) for the data structure APIs and complexity tables.
+See [`docs/README.md`](docs/README.md) for the full project documentation, [`chatroom/README.md`](chatroom/README.md) for the wire protocol, client commands (`/msg`, `/group`, `/users`, `/sendfile`), and server admin console (`users`, `stats`, `monitor`, `kick`, `broadcast`, `quit`), and [`structures/README.md`](structures/README.md) for the data structure APIs and complexity tables.
 
 ## Roadmap
 

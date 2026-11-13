@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Length-prefixed application-layer framing for the chatroom.
  *
@@ -98,5 +102,9 @@ typedef struct {
  *                         -> INPUT_SENDFILE, INPUT_FILE_ACCEPT, INPUT_FILE_REJECT
  */
 input_action_t proto_parse_input(const char *line, parsed_input_t *out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CHATROOM_PROTOCOL_H */
