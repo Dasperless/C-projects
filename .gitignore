@@ -57,3 +57,4 @@ TAGS
 # Environment and agent files
 .agents/
 PROJECT.md
+server.log
