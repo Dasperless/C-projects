@@ -3,6 +3,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Thread-safe, append-only audit logger.
  *
@@ -25,5 +29,9 @@ void logger_log(log_level_t level, const char *category, const char *fmt, ...)
 
 /* Flushes and closes the log file. Safe to call repeatedly. */
 void logger_close(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CHATROOM_LOGGER_H */

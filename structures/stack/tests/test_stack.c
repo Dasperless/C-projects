@@ -2,6 +2,7 @@
 #include "stack.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,6 +40,7 @@ static void test_stack_basic(void) {
 
     stack_destroy(s);
     stack_destroy(NULL);
+    assert(stack_create(SIZE_MAX) == NULL);
     printf("PASS: test_stack_basic\n");
 }
 

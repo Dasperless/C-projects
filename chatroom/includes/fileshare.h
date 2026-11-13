@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Chunked binary file transfer (issue #14).
  *
@@ -128,5 +132,9 @@ bool fs_receiver_open(fs_receiver_t *r, const char *dir, uint32_t id, const char
 fs_chunk_status_t fs_receiver_chunk(fs_receiver_t *r, const fs_chunk_view_t *chunk);
 /* Closes and deletes the partial file. Safe on an already finished receiver. */
 void fs_receiver_abort(fs_receiver_t *r);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CHATROOM_FILESHARE_H */

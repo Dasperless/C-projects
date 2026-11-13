@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct BSTNode {
     int key;
     int value;
@@ -34,5 +38,9 @@ void bst_postorder(const BST *tree, bst_visit_fn visit);
 /* Height in nodes on the longest root-to-leaf path; empty tree is 0. */
 size_t bst_height(const BST *tree);
 size_t bst_size(const BST *tree);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BST_H */
