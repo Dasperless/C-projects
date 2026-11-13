@@ -70,12 +70,13 @@ static uint64_t bytes_rx = 0;
 static volatile sig_atomic_t monitor_enabled = 1;
 static volatile sig_atomic_t stop_requested = 0;
 static int listen_fd = -1;
+static pthread_t main_tid;
 
 static void on_stop_signal(int sig) {
     (void)sig;
     stop_requested = 1;
     if (listen_fd >= 0) {
-        shutdown(listen_fd, SHUT_RDWR); /* async-signal-safe; wakes accept() */
+        shutdown(listen_fd, SHUT_RDWR); /* async-signal-safe; wakes accept() on Linux */
     }
 }
 
@@ -84,6 +85,7 @@ static void request_shutdown(void) {
     if (listen_fd >= 0) {
         shutdown(listen_fd, SHUT_RDWR);
     }
+    pthread_kill(main_tid, SIGTERM);
 }
 
 /* ---- helpers: *_locked functions require clients_mutex to be held ---- */
@@ -867,6 +869,7 @@ int main(int argc, char *argv[]) {
     server_addr.sin_port = htons((uint16_t)port);
 
     signal(SIGPIPE, SIG_IGN);
+    main_tid = pthread_self();
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = on_stop_signal;

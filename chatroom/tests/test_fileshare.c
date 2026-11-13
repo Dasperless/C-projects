@@ -14,7 +14,9 @@ static char tmpdir[64];
 static void write_file(const char *path, const uint8_t *data, size_t n) {
     FILE *f = fopen(path, "wb");
     assert(f != NULL);
-    assert(fwrite(data, 1, n, f) == n);
+    assert(data != NULL);
+    size_t written = fwrite(data, 1, n, f);
+    assert(written == n);
     fclose(f);
 }
 
@@ -107,6 +109,7 @@ static void roundtrip(size_t size, unsigned seed) {
     char src[128];
     snprintf(src, sizeof(src), "%s/src_%zu.bin", tmpdir, size);
     uint8_t *data = (uint8_t *)malloc(size + 1);
+    assert(data != NULL);
     for (size_t i = 0; i < size; i++) { /* every byte value, including NULs */
         seed = seed * 1664525u + 1013904223u;
         data[i] = (uint8_t)(seed >> 24);
@@ -142,8 +145,11 @@ static void roundtrip(size_t size, unsigned seed) {
     FILE *f = fopen(rx.final_path, "rb");
     assert(f != NULL);
     uint8_t *back = (uint8_t *)malloc(size + 1);
-    assert(fread(back, 1, size, f) == size);
-    assert(fgetc(f) == EOF);
+    assert(back != NULL);
+    size_t read_bytes = fread(back, 1, size, f);
+    assert(read_bytes == size);
+    int next_ch = fgetc(f);
+    assert(next_ch == EOF);
     fclose(f);
     assert(memcmp(back, data, size) == 0);
     assert(access(rx.part_path, F_OK) != 0); /* .part moved into place */
@@ -252,7 +258,8 @@ int main(void) {
     test_sender_errors();
     char cmd[128];
     snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
-    assert(system(cmd) == 0);
+    int rc = system(cmd);
+    assert(rc == 0);
     printf("All fileshare tests passed.\n");
     return 0;
 }
