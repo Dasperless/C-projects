@@ -98,6 +98,7 @@ static void test_rehash_integrity(void) {
 static void test_key_ownership(void) {
     HashTable *ht = ht_create(4);
     char *k = (char *)malloc(8);
+    assert(k != NULL);
     strcpy(k, "temp");
     assert(ht_insert(ht, k, 7));
     memset(k, 'x', 4);

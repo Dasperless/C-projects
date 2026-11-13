@@ -72,7 +72,8 @@ static void test_no_interleaving(void) {
         char tail[64] = "";
         const char *body = strstr(lines[i], "thread=");
         assert(body != NULL);
-        assert(sscanf(body, "thread=%d seq=%d payload=%63s", &id, &seq, tail) == 3);
+        int parsed = sscanf(body, "thread=%d seq=%d payload=%63s", &id, &seq, tail);
+        assert(parsed == 3);
         assert(strcmp(tail, "0123456789abcdef0123456789abcdef0123456789abcdef") == 0);
         assert(id >= 0 && id < THREADS && seq >= 0 && seq < LINES_PER_THREAD);
         seen[id][seq]++;

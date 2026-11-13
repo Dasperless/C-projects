@@ -10,6 +10,7 @@
 #include "protocol.h"
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
@@ -49,6 +50,13 @@ static inline int tc_connect(int port) {
 static inline pid_t tc_start_server_log(const char *bin, int port, const char *logfile) {
     pid_t pid = fork();
     if (pid == 0) {
+        int devnull = open("/dev/null", O_RDONLY);
+        if (devnull >= 0) {
+            dup2(devnull, STDIN_FILENO);
+            if (devnull != STDIN_FILENO) {
+                close(devnull);
+            }
+        }
         char port_str[16];
         snprintf(port_str, sizeof(port_str), "%d", port);
         execl(bin, bin, TC_IP, port_str, logfile, (char *)NULL);

@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     /* restart: previous entries survive, file is appended to */
     size_t before = strlen(log);
     char *snapshot = malloc(before + 1);
+    CHECK(snapshot != NULL);
     memcpy(snapshot, log, before + 1);
     close(a);
     close(b);
