@@ -11,8 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #define MAX_CLIENTS 50
@@ -23,6 +25,10 @@ typedef struct {
     struct sockaddr_in address;
     int sockfd;
     int uid;
+    time_t connected_at;
+    pthread_t tid;
+    bool active;               /* worker thread is still running */
+    bool kicked;               /* suppress the duplicate "has left" broadcast */
     char name[PROTO_NAME_LEN]; /* empty until the handshake succeeds */
     char groups[MAX_GROUPS_PER_CLIENT][PROTO_NAME_LEN];
     int group_count;
@@ -47,19 +53,60 @@ static uint32_t transfer_counter = 0;
 static int client_count = 0;
 static int uid_counter = 10;
 static client_t *clients[MAX_CLIENTS] = {NULL};
-/* Guards the clients table and every socket write (so frames never interleave). */
+/* Guards the clients table, metrics and every socket write (so frames never interleave). */
 static pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* ---- runtime metrics and admin state (issue #15) ---- */
+
+static time_t server_started_at = 0;
+static int peak_clients = 0;
+static uint64_t total_connections = 0;
+static uint64_t msg_public_count = 0;
+static uint64_t msg_private_count = 0;
+static uint64_t msg_group_count = 0;
+static uint64_t bytes_tx = 0;
+static uint64_t bytes_rx = 0;
+static volatile sig_atomic_t monitor_enabled = 1;
+static volatile sig_atomic_t stop_requested = 0;
+static int listen_fd = -1;
+
+static void on_stop_signal(int sig) {
+    (void)sig;
+    stop_requested = 1;
+    if (listen_fd >= 0) {
+        shutdown(listen_fd, SHUT_RDWR); /* async-signal-safe; wakes accept() */
+    }
+}
+
+static void request_shutdown(void) {
+    stop_requested = 1;
+    if (listen_fd >= 0) {
+        shutdown(listen_fd, SHUT_RDWR);
+    }
+}
 
 /* ---- helpers: *_locked functions require clients_mutex to be held ---- */
 
-static void send_to_locked(const client_t *to, packet_type_t type, const char *sender,
-                           const char *target, const char *text) {
-    (void)packet_send(to->sockfd, type, sender, target, text, strlen(text));
-}
-
 static void send_raw_locked(const client_t *to, packet_type_t type, const char *sender,
                             const char *target, const void *data, size_t len) {
-    (void)packet_send(to->sockfd, type, sender, target, data, len);
+    if (packet_send(to->sockfd, type, sender, target, data, len)) {
+        bytes_tx += sizeof(packet_header_t) + len;
+    }
+}
+
+static void send_to_locked(const client_t *to, packet_type_t type, const char *sender,
+                           const char *target, const char *text) {
+    send_raw_locked(to, type, sender, target, text, strlen(text));
+}
+
+static int recv_counted(int sockfd, packet_header_t *hdr, char *payload) {
+    int r = packet_recv(sockfd, hdr, payload);
+    if (r == 1) {
+        pthread_mutex_lock(&clients_mutex);
+        bytes_rx += sizeof(packet_header_t) + hdr->payload_len;
+        pthread_mutex_unlock(&clients_mutex);
+    }
+    return r;
 }
 
 static client_t *find_by_name_locked(const char *name) {
@@ -103,28 +150,47 @@ static void peer_ip(const client_t *c, char *buf, size_t len) {
     }
 }
 
-static void queue_client(client_t *cl) {
-    pthread_mutex_lock(&clients_mutex);
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i] == NULL) {
-            clients[i] = cl;
-            client_count++;
-            break;
+/* Reaps finished worker threads so the slot table never stays full of zombies. */
+static void reap_finished_clients(void) {
+    while (1) {
+        client_t *dead = NULL;
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (clients[i] != NULL && !clients[i]->active) {
+                dead = clients[i];
+                clients[i] = NULL;
+                break;
+            }
         }
+        pthread_mutex_unlock(&clients_mutex);
+        if (dead == NULL) {
+            return;
+        }
+        pthread_join(dead->tid, NULL);
+        free(dead);
     }
-    pthread_mutex_unlock(&clients_mutex);
 }
 
-static void remove_client(int uid) {
+static bool queue_client(client_t *cl) {
+    reap_finished_clients();
+    bool ok = false;
     pthread_mutex_lock(&clients_mutex);
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i] != NULL && clients[i]->uid == uid) {
-            clients[i] = NULL;
-            client_count--;
-            break;
+    if (client_count < MAX_CLIENTS) {
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (clients[i] == NULL) {
+                clients[i] = cl;
+                client_count++;
+                total_connections++;
+                if (client_count > peak_clients) {
+                    peak_clients = client_count;
+                }
+                ok = true;
+                break;
+            }
         }
     }
     pthread_mutex_unlock(&clients_mutex);
+    return ok;
 }
 
 /* ---- command handlers ---- */
@@ -169,7 +235,12 @@ static void handle_private(client_t *client, const char *to, const char *text) {
                        "Cannot send a private message to yourself");
     } else {
         send_to_locked(dest, PKT_MSG_PRIVATE, client->name, dest->name, text);
+        msg_private_count++;
         logger_log(LOG_LEVEL_INFO, "PRIV", "'%s' -> '%s': \"%s\"", client->name, dest->name, text);
+        if (monitor_enabled) {
+            printf("[PRIV] %s -> %s: %s\n", client->name, dest->name, text);
+            fflush(stdout);
+        }
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -246,7 +317,12 @@ static void handle_group_msg(client_t *client, const char *group, const char *te
                        "Join the group first with /group <name>");
     } else {
         fanout_locked(PKT_MSG_GROUP, client->name, group, text, client->uid, group);
+        msg_group_count++;
         logger_log(LOG_LEVEL_INFO, "GRP", "'%s' -> #%s: \"%s\"", client->name, group, text);
+        if (monitor_enabled) {
+            printf("[#%s] %s: %s\n", group, client->name, text);
+            fflush(stdout);
+        }
     }
     pthread_mutex_unlock(&clients_mutex);
 }
@@ -423,7 +499,7 @@ static void handle_file_abort(client_t *client, const char *payload, size_t len)
 static bool do_handshake(client_t *client) {
     packet_header_t hdr;
     char payload[PROTO_MAX_PAYLOAD + 1];
-    if (packet_recv(client->sockfd, &hdr, payload) != 1 || hdr.type != PKT_HANDSHAKE) {
+    if (recv_counted(client->sockfd, &hdr, payload) != 1 || hdr.type != PKT_HANDSHAKE) {
         return false;
     }
     char ip[INET_ADDRSTRLEN];
@@ -461,7 +537,7 @@ static void *handle_client(void *arg) {
     bool registered = do_handshake(client);
 
     while (registered) {
-        int r = packet_recv(client->sockfd, &hdr, payload);
+        int r = recv_counted(client->sockfd, &hdr, payload);
         if (r != 1) {
             break; /* disconnect or protocol violation */
         }
@@ -473,10 +549,13 @@ static void *handle_client(void *arg) {
             if (hdr.payload_len > 0) {
                 pthread_mutex_lock(&clients_mutex);
                 fanout_locked(PKT_MSG_PUBLIC, client->name, "", payload, client->uid, NULL);
+                msg_public_count++;
                 logger_log(LOG_LEVEL_INFO, "MSG", "'%s' -> ALL: \"%s\"", client->name, payload);
                 pthread_mutex_unlock(&clients_mutex);
-                printf("%s: %s\n", client->name, payload);
-                fflush(stdout);
+                if (monitor_enabled) {
+                    printf("%s: %s\n", client->name, payload);
+                    fflush(stdout);
+                }
             }
             break;
         case PKT_MSG_PRIVATE:
@@ -515,22 +594,213 @@ static void *handle_client(void *arg) {
         }
     }
 
-    /* Announce departure, deregister, release resources */
+    /* Announce departure, mark inactive so the main/reaper thread can join and free us */
+    pthread_mutex_lock(&clients_mutex);
     if (registered) {
-        char out[PROTO_MAX_PAYLOAD];
-        snprintf(out, sizeof(out), "%s has left the chat", client->name);
-        pthread_mutex_lock(&clients_mutex);
         abort_transfers_of_locked(client->name);
-        fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+        if (!client->kicked && !stop_requested) {
+            char out[PROTO_MAX_PAYLOAD];
+            snprintf(out, sizeof(out), "%s has left the chat", client->name);
+            fanout_locked(PKT_SERVER_INFO, "server", "", out, client->uid, NULL);
+            printf("%s\n", out);
+            fflush(stdout);
+        }
         logger_log(LOG_LEVEL_INFO, "DISC", "Client '%s' disconnected", client->name);
+    }
+    client->name[0] = '\0';
+    client->active = false;
+    client_count--;
+    close(client->sockfd);
+    pthread_mutex_unlock(&clients_mutex);
+    return NULL;
+}
+
+/* ---- interactive administrative console & graceful teardown (issue #15) ---- */
+
+static void admin_users(void) {
+    time_t now = time(NULL);
+    printf("%-6s %-20s %-16s %-6s %s\n", "UID", "USERNAME", "IP", "PORT", "DURATION");
+    printf("----------------------------------------------------------------\n");
+    int count = 0;
+    pthread_mutex_lock(&clients_mutex);
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        const client_t *c = clients[i];
+        if (c == NULL || !c->active || c->name[0] == '\0') {
+            continue;
+        }
+        char ip[INET_ADDRSTRLEN];
+        peer_ip(c, ip, sizeof(ip));
+        long d = (long)(now - c->connected_at);
+        if (d < 0) {
+            d = 0;
+        }
+        printf("%-6d %-20s %-16s %-6d %02ld:%02ld:%02ld\n", c->uid, c->name, ip,
+               (int)ntohs(c->address.sin_port), d / 3600, (d % 3600) / 60, d % 60);
+        count++;
+    }
+    pthread_mutex_unlock(&clients_mutex);
+    printf("Total active clients: %d\n", count);
+}
+
+static void admin_stats(void) {
+    pthread_mutex_lock(&clients_mutex);
+    long up = (long)(time(NULL) - server_started_at);
+    if (up < 0) {
+        up = 0;
+    }
+    int active = 0;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (clients[i] != NULL && clients[i]->active && clients[i]->name[0] != '\0') {
+            active++;
+        }
+    }
+    int peak = peak_clients;
+    uint64_t conns = total_connections;
+    uint64_t pub = msg_public_count;
+    uint64_t priv = msg_private_count;
+    uint64_t grp = msg_group_count;
+    uint64_t tx = bytes_tx;
+    uint64_t rx = bytes_rx;
+    pthread_mutex_unlock(&clients_mutex);
+
+    printf("=== Server Statistics ===\n"
+           "Uptime              : %ldd %02ldh %02ldm %02lds\n"
+           "Active clients      : %d (peak: %d)\n"
+           "Total connections   : %llu\n"
+           "Messages relayed    : %llu (broadcast: %llu, private: %llu, group: %llu)\n"
+           "Bytes TX / RX       : %llu / %llu\n"
+           "Live traffic monitor: %s\n",
+           up / 86400, (up % 86400) / 3600, (up % 3600) / 60, up % 60, active, peak,
+           (unsigned long long)conns, (unsigned long long)(pub + priv + grp),
+           (unsigned long long)pub, (unsigned long long)priv, (unsigned long long)grp,
+           (unsigned long long)tx, (unsigned long long)rx, monitor_enabled ? "on" : "off");
+}
+
+static void admin_kick(const char *username) {
+    if (username[0] == '\0') {
+        printf("Usage: kick <username>\n");
+        return;
+    }
+    pthread_mutex_lock(&clients_mutex);
+    client_t *c = find_by_name_locked(username);
+    if (c == NULL) {
         pthread_mutex_unlock(&clients_mutex);
-        printf("%s\n", out);
+        printf("User '%s' not found.\n", username);
+        return;
+    }
+    c->kicked = true;
+    send_to_locked(c, PKT_SERVER_ERROR, "server", c->name,
+                   "You have been kicked by an administrator");
+    shutdown(c->sockfd, SHUT_RDWR);
+    char notice[PROTO_MAX_PAYLOAD];
+    snprintf(notice, sizeof(notice), "%s was kicked by an administrator", username);
+    fanout_locked(PKT_SERVER_INFO, "server", "", notice, c->uid, NULL);
+    logger_log(LOG_LEVEL_WARN, "ADMIN", "Kicked user '%s' (uid %d)", username, c->uid);
+    pthread_mutex_unlock(&clients_mutex);
+    printf("Kicked '%s'.\n", username);
+}
+
+static void admin_broadcast(const char *msg) {
+    if (msg[0] == '\0') {
+        printf("Usage: broadcast <msg>\n");
+        return;
+    }
+    char out[PROTO_MAX_PAYLOAD];
+    snprintf(out, sizeof(out), "[ADMIN] %.2000s", msg);
+    pthread_mutex_lock(&clients_mutex);
+    fanout_locked(PKT_SERVER_INFO, "server", "", out, -1, NULL);
+    msg_public_count++;
+    logger_log(LOG_LEVEL_INFO, "ADMIN", "Broadcast: \"%s\"", msg);
+    pthread_mutex_unlock(&clients_mutex);
+    printf("%s\n", out);
+}
+
+static void admin_help(void) {
+    printf("Admin commands:\n"
+           "  help              show this list\n"
+           "  users             table of active clients\n"
+           "  stats             uptime, connection, message and byte counters\n"
+           "  monitor [on|off]  show or set live traffic echoing\n"
+           "  kick <username>   disconnect a user\n"
+           "  broadcast <msg>   send an announcement to everyone\n"
+           "  shutdown | quit   stop the server cleanly\n");
+}
+
+static void *admin_console_thread(void *arg) {
+    (void)arg;
+    char line[PROTO_MAX_PAYLOAD];
+    while (!stop_requested && fgets(line, (int)sizeof(line), stdin) != NULL) {
+        line[strcspn(line, "\r\n")] = '\0';
+        char *cmd = line;
+        while (*cmd == ' ') {
+            cmd++;
+        }
+        if (*cmd == '\0') {
+            continue;
+        }
+        char *arg_str = cmd;
+        while (*arg_str != '\0' && *arg_str != ' ') {
+            arg_str++;
+        }
+        if (*arg_str != '\0') {
+            *arg_str++ = '\0';
+            while (*arg_str == ' ') {
+                arg_str++;
+            }
+        }
+        if (strcmp(cmd, "help") == 0) {
+            admin_help();
+        } else if (strcmp(cmd, "users") == 0) {
+            admin_users();
+        } else if (strcmp(cmd, "stats") == 0) {
+            admin_stats();
+        } else if (strcmp(cmd, "monitor") == 0) {
+            if (strcasecmp(arg_str, "on") == 0) {
+                monitor_enabled = 1;
+            } else if (strcasecmp(arg_str, "off") == 0) {
+                monitor_enabled = 0;
+            } else if (arg_str[0] != '\0') {
+                printf("Usage: monitor [on|off]\n");
+            }
+            printf("Traffic monitor is %s.\n", monitor_enabled ? "on" : "off");
+        } else if (strcmp(cmd, "kick") == 0) {
+            admin_kick(arg_str);
+        } else if (strcmp(cmd, "broadcast") == 0) {
+            admin_broadcast(arg_str);
+        } else if (strcmp(cmd, "shutdown") == 0 || strcmp(cmd, "quit") == 0) {
+            logger_log(LOG_LEVEL_INFO, "ADMIN", "Shutdown requested from console");
+            request_shutdown();
+            break;
+        } else {
+            printf("Unknown command '%s'. Type 'help'.\n", cmd);
+        }
         fflush(stdout);
     }
-    remove_client(client->uid);
-    close(client->sockfd);
-    free(client);
     return NULL;
+}
+
+/* Notifies every client, wakes their threads and joins them before returning. */
+static void shutdown_all_clients(void) {
+    pthread_mutex_lock(&clients_mutex);
+    fanout_locked(PKT_SERVER_INFO, "server", "", "SERVER_SHUTDOWN: Server is shutting down", -1,
+                  NULL);
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (clients[i] != NULL && clients[i]->active) {
+            shutdown(clients[i]->sockfd, SHUT_RDWR);
+        }
+    }
+    pthread_mutex_unlock(&clients_mutex);
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        pthread_mutex_lock(&clients_mutex);
+        client_t *c = clients[i];
+        clients[i] = NULL;
+        pthread_mutex_unlock(&clients_mutex);
+        if (c != NULL) {
+            pthread_join(c->tid, NULL);
+            free(c);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -548,16 +818,18 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    int listefd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listefd < 0) {
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_fd < 0) {
         perror("Error: socket failed");
+        logger_close();
         return EXIT_FAILURE;
     }
 
     int opt = 1;
-    if (setsockopt(listefd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("Error: setsockopt(SO_REUSEADDR) failed");
-        close(listefd);
+        close(listen_fd);
+        logger_close();
         return EXIT_FAILURE;
     }
 
@@ -566,50 +838,58 @@ int main(int argc, char *argv[]) {
     server_addr.sin_family = AF_INET;
     if (inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0) {
         fprintf(stderr, "Error: invalid IP address '%s'\n", ip);
-        close(listefd);
+        close(listen_fd);
+        logger_close();
         return EXIT_FAILURE;
     }
     server_addr.sin_port = htons((uint16_t)port);
 
     signal(SIGPIPE, SIG_IGN);
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = on_stop_signal;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 
-    if (bind(listefd, (struct sockaddr *)&server_addr, (socklen_t)sizeof(server_addr)) < 0) {
+    if (bind(listen_fd, (struct sockaddr *)&server_addr, (socklen_t)sizeof(server_addr)) < 0) {
         perror("Error: bind failed");
-        close(listefd);
+        close(listen_fd);
+        logger_close();
         return EXIT_FAILURE;
     }
 
-    if (listen(listefd, 10) < 0) {
+    if (listen(listen_fd, 16) < 0) {
         perror("Error: listen failed");
-        close(listefd);
+        close(listen_fd);
+        logger_close();
         return EXIT_FAILURE;
     }
 
+    server_started_at = time(NULL);
     logger_log(LOG_LEVEL_INFO, "SERV", "Server started on %s:%d (log: %s)", ip, port, log_path);
     printf("Server listening on %s:%d\n", ip, port);
     fflush(stdout);
 
-    while (1) {
+    pthread_t console_tid;
+    if (pthread_create(&console_tid, NULL, admin_console_thread, NULL) == 0) {
+        pthread_detach(console_tid); /* stdin may remain blocked if stopped by signal */
+    }
+
+    while (!stop_requested) {
         struct sockaddr_in client_addr;
         socklen_t client_size = (socklen_t)sizeof(client_addr);
-        int connfd = accept(listefd, (struct sockaddr *)&client_addr, &client_size);
+        int connfd = accept(listen_fd, (struct sockaddr *)&client_addr, &client_size);
         if (connfd < 0) {
+            if (stop_requested) {
+                break;
+            }
             if (errno == EINTR) {
                 continue;
             }
             perror("Error: accept failed");
             break;
         }
-
-        pthread_mutex_lock(&clients_mutex);
-        if (client_count >= MAX_CLIENTS) {
-            pthread_mutex_unlock(&clients_mutex);
-            fprintf(stderr, "Max clients reached. Rejected connection.\n");
-            (void)packet_send(connfd, PKT_SERVER_ERROR, "server", "", "Server full", 11);
-            close(connfd);
-            continue;
-        }
-        pthread_mutex_unlock(&clients_mutex);
 
         client_t *newclient = (client_t *)calloc(1, sizeof(client_t));
         if (!newclient) {
@@ -620,22 +900,39 @@ int main(int argc, char *argv[]) {
         newclient->address = client_addr;
         newclient->sockfd = connfd;
         newclient->uid = ++uid_counter;
+        newclient->connected_at = time(NULL);
+        newclient->active = true;
 
-        queue_client(newclient);
-
-        pthread_t tid;
-        if (pthread_create(&tid, NULL, handle_client, (void *)newclient) != 0) {
-            perror("Error: pthread_create failed");
-            remove_client(newclient->uid);
+        if (!queue_client(newclient)) {
+            fprintf(stderr, "Max clients reached. Rejected connection.\n");
+            (void)packet_send(connfd, PKT_SERVER_ERROR, "server", "", "Server full", 11);
             close(connfd);
             free(newclient);
             continue;
         }
-        pthread_detach(tid);
+
+        if (pthread_create(&newclient->tid, NULL, handle_client, (void *)newclient) != 0) {
+            perror("Error: pthread_create failed");
+            pthread_mutex_lock(&clients_mutex);
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (clients[i] == newclient) {
+                    clients[i] = NULL;
+                    client_count--;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            close(connfd);
+            free(newclient);
+            continue;
+        }
     }
 
-    close(listefd);
-    logger_log(LOG_LEVEL_INFO, "SERV", "Server stopped");
+    close(listen_fd);
+    listen_fd = -1;
+    shutdown_all_clients();
+    logger_log(LOG_LEVEL_INFO, "SERV", "Server stopped cleanly");
+    printf("Server stopped.\n");
+    fflush(stdout);
     logger_close();
     return EXIT_SUCCESS;
 }
