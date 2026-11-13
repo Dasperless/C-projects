@@ -1,8 +1,12 @@
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
 #ifndef CHATROOM_TEST_UTIL_H
 #define CHATROOM_TEST_UTIL_H
 
-#define _DEFAULT_SOURCE
-#define _POSIX_C_SOURCE 200809L
 #include "protocol.h"
 
 #include <arpa/inet.h>
