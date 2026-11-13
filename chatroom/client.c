@@ -83,6 +83,10 @@ static void send_ctl(packet_type_t type, const char *target, uint32_t id, const 
 
 /* /sendfile: validate locally, then offer the file to the recipient via the server. */
 static void start_offer(const char *recipient, const char *path) {
+    if (strlen(path) >= FS_PATH_MAX) {
+        printf("! File path too long\n");
+        return;
+    }
     uint64_t size = 0;
     uint32_t crc = 0;
     if (!fs_file_info(path, &size, &crc)) {
@@ -116,7 +120,7 @@ static void start_offer(const char *recipient, const char *path) {
     slot->used = true;
     snprintf(slot->recipient, sizeof(slot->recipient), "%s", recipient);
     snprintf(slot->filename, sizeof(slot->filename), "%s", safe);
-    snprintf(slot->path, sizeof(slot->path), "%s", path);
+    snprintf(slot->path, sizeof(slot->path), "%.*s", (int)sizeof(slot->path) - 1, path);
     slot->size = size;
     pthread_mutex_unlock(&state_mu);
 

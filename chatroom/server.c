@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -625,7 +626,7 @@ static void admin_users(void) {
     pthread_mutex_lock(&clients_mutex);
     for (int i = 0; i < MAX_CLIENTS; i++) {
         const client_t *c = clients[i];
-        if (c == NULL || !c->active || c->name[0] == '\0') {
+        if (c == NULL || !c->active || c->kicked || c->name[0] == '\0') {
             continue;
         }
         char ip[INET_ADDRSTRLEN];
@@ -650,7 +651,8 @@ static void admin_stats(void) {
     }
     int active = 0;
     for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i] != NULL && clients[i]->active && clients[i]->name[0] != '\0') {
+        if (clients[i] != NULL && clients[i]->active && !clients[i]->kicked &&
+            clients[i]->name[0] != '\0') {
             active++;
         }
     }
@@ -693,9 +695,9 @@ static void admin_kick(const char *username) {
                    "You have been kicked by an administrator");
     shutdown(c->sockfd, SHUT_RDWR);
     char notice[PROTO_MAX_PAYLOAD];
-    snprintf(notice, sizeof(notice), "%s was kicked by an administrator", username);
+    snprintf(notice, sizeof(notice), "%s was kicked by an administrator", c->name);
     fanout_locked(PKT_SERVER_INFO, "server", "", notice, c->uid, NULL);
-    logger_log(LOG_LEVEL_WARN, "ADMIN", "Kicked user '%s' (uid %d)", username, c->uid);
+    logger_log(LOG_LEVEL_WARN, "ADMIN", "Kicked user '%s' (uid %d)", c->name, c->uid);
     pthread_mutex_unlock(&clients_mutex);
     printf("Kicked '%s'.\n", username);
 }
@@ -729,7 +731,27 @@ static void admin_help(void) {
 static void *admin_console_thread(void *arg) {
     (void)arg;
     char line[PROTO_MAX_PAYLOAD];
-    while (!stop_requested && fgets(line, (int)sizeof(line), stdin) != NULL) {
+    while (!stop_requested) {
+        struct pollfd pfd;
+        pfd.fd = STDIN_FILENO;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int pr = poll(&pfd, 1, 50);
+        if (pr < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+        if (pr == 0) {
+            continue;
+        }
+        if ((pfd.revents & (POLLIN | POLLHUP | POLLERR)) == 0) {
+            continue;
+        }
+        if (fgets(line, (int)sizeof(line), stdin) == NULL) {
+            break;
+        }
         line[strcspn(line, "\r\n")] = '\0';
         char *cmd = line;
         while (*cmd == ' ') {
@@ -872,9 +894,7 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
 
     pthread_t console_tid;
-    if (pthread_create(&console_tid, NULL, admin_console_thread, NULL) == 0) {
-        pthread_detach(console_tid); /* stdin may remain blocked if stopped by signal */
-    }
+    bool has_console = (pthread_create(&console_tid, NULL, admin_console_thread, NULL) == 0);
 
     while (!stop_requested) {
         struct sockaddr_in client_addr;
@@ -929,6 +949,9 @@ int main(int argc, char *argv[]) {
 
     close(listen_fd);
     listen_fd = -1;
+    if (has_console) {
+        pthread_join(console_tid, NULL);
+    }
     shutdown_all_clients();
     logger_log(LOG_LEVEL_INFO, "SERV", "Server stopped cleanly");
     printf("Server stopped.\n");
