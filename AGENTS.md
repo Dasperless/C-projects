@@ -33,3 +33,8 @@ cppcheck --error-exitcode=1 --enable=warning,performance,portability --inline-su
 - **Cppcheck Compliance in Tests**:
   - Do not place expressions with side effects (`fwrite`, `fread`, `fgetc`, `sscanf`, `system`) inside `assert(...)` (`[assertWithSideEffect]`); assign the return value to a local variable first and assert on the variable.
   - Always check or assert that `malloc`/`calloc` return values are non-`NULL` before dereferencing (`[nullPointerOutOfMemory]`).
+
+## Git Branch & Pull Request Conventions
+
+- **Branch Naming**: Every new branch must follow the format `<type>/<small-description>` (e.g., `fix/console-shutdown`, `feat/bst-delete`, `docs/readme-quickstart`).
+- **Pull Request Titles**: All pull requests must use Conventional Commits format in the title (`<type>(<scope>): <summary>` or `<type>: <summary>`).
